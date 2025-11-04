@@ -247,7 +247,7 @@
                         deadline = toPersianNumber ? toPersianNumber(task.deadline) : task.deadline;
                     }
                 }
-                
+                //فسف
                 return `
                     <tr>
                         <td>${toPersianNumber(task.id)}</td>
@@ -335,10 +335,49 @@
 
         function loadUsersForAssignment() {
             const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
             const assignedToSelect = document.getElementById('assignedTo');
-            
+
+            const isLeaderRole = role => ['رئیس','رئیس واحد'].includes(role);
+
+            // پیدا کردن رئیس گروهِ کاربر (اگر خودش رئیس است، خودش)
+            function findUserById(id){ return users.find(u => u.id === id); }
+            function findGroupLeader(user){
+                if (!user) return null;
+                if (isLeaderRole(user.role)) return user;
+                const sup = findUserById(user.supervisor);
+                if (!sup) return null;
+                return isLeaderRole(sup.role) ? sup : null;
+            }
+
+            let allowedUsers = [];
+            if (!currentUser) {
+                allowedUsers = users.slice();
+            } else if (currentUser.role === 'مدیر') {
+                // مدیر همه را می‌بیند
+                allowedUsers = users.slice();
+            } else if (isLeaderRole(currentUser.role)) {
+                // رئیس: اعضای گروه خودش + همهٔ رؤسای دیگر
+                const myGroupMembers = users.filter(u => u.supervisor === currentUser.id);
+                const allLeaders = users.filter(u => isLeaderRole(u.role));
+                const set = new Map();
+                [...myGroupMembers, currentUser, ...allLeaders].forEach(u => set.set(u.id, u));
+                allowedUsers = Array.from(set.values());
+            } else {
+                // کاربر عادی: اعضای گروه خودش + رئیس گروه
+                const leader = findGroupLeader(currentUser);
+                const groupMembers = leader ? users.filter(u => u.supervisor === leader.id) : [];
+                const set = new Map();
+                [...groupMembers, ...(leader ? [leader] : []), currentUser].forEach(u => set.set(u.id, u));
+                allowedUsers = Array.from(set.values());
+            }
+
+            // مرتب‌سازی: اول رؤسا، بعد بقیه بر اساس نام
+            const roleOrder = u => (isLeaderRole(u.role) ? 0 : 1);
+            allowedUsers.sort((a,b) => roleOrder(a)-roleOrder(b) || a.fullName.localeCompare(b.fullName, 'fa'));
+
             assignedToSelect.innerHTML = '<option value="">انتخاب کاربر</option>' +
-                users.map(user => `<option value="${user.id}">${user.fullName} (${user.role})</option>`).join('');
+                allowedUsers.map(user => `<option value="${user.id}">${user.fullName} (${user.role})</option>`).join('');
         }
 
         document.getElementById('taskForm').addEventListener('submit', function(e) {
