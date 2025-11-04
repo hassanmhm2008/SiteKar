@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>درخواست‌های واحد - مدیریت کار و درخواست</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>سیستم مدیریت</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span> داشبورد
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <span>✓</span> کارها
+                </a>
+                <a href="requests.html" class="nav-item">
+                    <span>📦</span> درخواست‌ها
+                </a>
+                <a href="department-requests.html" class="nav-item active admin-menu" data-page="department-requests">
+                    <span>📋</span> درخواست‌های واحد
+                </a>
+                <a href="warehouse-requests.html" class="nav-item admin-menu" data-page="warehouse-requests">
+                    <span>🏭</span> درخواست‌های انبار
+                </a>                
+                <div class="nav-item-parent admin-menu" onclick="toggleSubmenu(this)">
+                    <span>⚙️</span> تنظیمات
+                </div>
+                <div class="nav-submenu admin-menu">
+                    <a href="users.html" class="nav-item">
+                        <span>👥</span> مدیریت کاربران
+                    </a>
+                    <a href="departments.html" class="nav-item">
+                        <span>🏢</span> واحدها
+                    </a>
+                    <a href="products.html" class="nav-item">
+                        <span>📋</span> مدیریت کالاها
+                    </a>
+                    <a href="permissions.html" class="nav-item">
+                        <span>🔐</span> دسترسی‌ها
+                    </a>
+                    <a href="reports.html" class="nav-item">
+                        <span>📈</span> گزارش‌ها
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="currentUserInfo">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name"></span>
+                        <span class="user-role"></span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary btn-logout">خروج</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1 id="pageTitle">درخواست‌های واحد</h1>
+            </header>
+
+            <div class="content-section">
+                <div class="filters">
+                    <select id="statusFilter" onchange="filterRequests()">
+                        <option value="">همه وضعیت‌ها</option>
+                        <option value="ارسال نشده">ارسال نشده</option>
+                        <option value="در انتظار تایید" selected>در انتظار تایید</option>
+                        <option value="تایید رئیس">تایید رئیس</option>
+                        <option value="رد شده">رد شده</option>
+                        <option value="تایید موجودی">تایید موجودی</option>
+                        <option value="تحویل داده شده">تحویل داده شده</option>
+                        <option value="بازگشت داده شده">بازگشت داده شده</option>
+                    </select>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>شماره درخواست</th>
+                                <th>واحد</th>
+                                <th>کاربر درخواست‌دهنده</th>
+                                <th>تعداد اقلام</th>
+                                <th>تاریخ درخواست</th>
+                                <th>وضعیت</th>
+                                <th>توضیحات</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestsTableBody">
+                            <tr>
+                                <td colspan="8" class="empty-state">در حال بارگذاری...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal جزئیات درخواست -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>جزئیات درخواست #<span id="detailRequestId"></span></h2>
+                <button onclick="closeDetailsModal()" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="request-info">
+                    <p><strong>کاربر:</strong> <span id="detailUserName"></span></p>
+                    <p><strong>تاریخ:</strong> <span id="detailDate"></span></p>
+                    <p><strong>توضیحات:</strong> <span id="detailDescription"></span></p>
+                </div>
+                
+                <h3>لیست کالاهای درخواستی:</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ردیف</th>
+                                <th>نام کالا</th>
+                                <th>تعداد</th>
+                                <th>توضیحات</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailItemsBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeDetailsModal()" class="btn btn-secondary">بستن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal تایید درخواست -->
+    <div id="approveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>تایید درخواست</h2>
+                <button onclick="closeApproveModal()" class="modal-close">&times;</button>
+            </div>
+            <form id="approveForm" class="modal-form">
+                <input type="hidden" id="approveRequestId">
+                
+                <div class="form-group">
+                    <label for="approveComment">توضیحات (اختیاری)</label>
+                    <textarea id="approveComment" rows="4" placeholder="توضیحات خود را وارد کنید..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">✓ تایید درخواست</button>
+                    <button type="button" onclick="closeApproveModal()" class="btn btn-secondary">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal رد درخواست -->
+    <div id="rejectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>رد درخواست</h2>
+                <button onclick="closeRejectModal()" class="modal-close">&times;</button>
+            </div>
+            <form id="rejectForm" class="modal-form">
+                <input type="hidden" id="rejectRequestId">
+                
+                <div class="form-group">
+                    <label for="rejectComment">دلیل رد درخواست (اختیاری)</label>
+                    <textarea id="rejectComment" rows="4" placeholder="در صورت نیاز دلیل رد را بنویسید..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-danger">✗ رد درخواست</button>
+                    <button type="button" onclick="closeRejectModal()" class="btn btn-secondary">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal برگشت درخواست -->
+    <div id="returnModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>↩️ برگشت درخواست</h2>
+                <button onclick="closeReturnModal()" class="modal-close">&times;</button>
+            </div>
+            <form id="returnForm" class="modal-form">
+                <input type="hidden" id="returnRequestId">
+                
+                <div class="form-group">
+                    <label for="returnComment">دلیل برگشت (اختیاری)</label>
+                    <textarea id="returnComment" rows="4" placeholder="در صورت نیاز دلیل برگشت را بنویسید..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning">↩️ برگشت</button>
+                    <button type="button" onclick="closeReturnModal()" class="btn btn-secondary">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="api.js"></script>
+    <script>
+        checkAuth();
+        displayCurrentUser();
+        
+        (async function() {
+            await checkCurrentPageAccess();
+            await checkPagePermissions();
+            initializeMenu();
+            await loadDepartmentRequests();
+        })();
+
+        let allRequests = [];
+        let currentRequestId = null;
+
+        async function loadDepartmentRequests() {
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                const statusFilter = document.getElementById('statusFilter').value;
+                
+                // اگر مدیر است، همه درخواست‌ها را نشان بده
+                let apiUrl;
+                if (currentUser.role === 'مدیر') {
+                    apiUrl = statusFilter 
+                        ? `http://localhost:3000/api/requests?status=${encodeURIComponent(statusFilter)}`
+                        : 'http://localhost:3000/api/requests';
+                } else {
+                    // برای رئیس واحد فقط درخواست‌های واحد خودش
+                    if (!currentUser.department_id) {
+                        document.getElementById('requestsTableBody').innerHTML = 
+                            '<tr><td colspan="8" class="empty-state">شما به هیچ واحدی تخصیص داده نشده‌اید</td></tr>';
+                        return;
+                    }
+                    apiUrl = statusFilter
+                        ? `http://localhost:3000/api/requests?department_id=${currentUser.department_id}&status=${encodeURIComponent(statusFilter)}`
+                        : `http://localhost:3000/api/requests?department_id=${currentUser.department_id}`;
+                }
+
+                const response = await fetch(apiUrl);
+                const result = await response.json();
+
+                if (result.success && result.requests) {
+                    allRequests = result.requests;
+                    displayRequests();
+                } else {
+                    alert('خطا در بارگذاری درخواست‌ها');
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری درخواست‌ها:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        function filterRequests() {
+            loadDepartmentRequests();
+        }
+
+        function displayRequests() {
+            const tbody = document.getElementById('requestsTableBody');
+            
+            if (allRequests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">هیچ درخواستی یافت نشد</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allRequests.map(request => {
+                const date = new Date(request.created_at).toLocaleDateString('fa-IR');
+                
+                // تعیین بج وضعیت
+                let statusBadge = '';
+                if (request.status === 'در انتظار تایید') {
+                    statusBadge = '<span class="badge badge-warning">در انتظار تایید</span>';
+                } else if (request.status === 'تایید رئیس') {
+                    statusBadge = '<span class="badge badge-success">تایید رئیس</span>';
+                } else if (request.status === 'رد شده') {
+                    statusBadge = '<span class="badge badge-danger">رد شده</span>';
+                } else if (request.status === 'تایید موجودی') {
+                    statusBadge = '<span class="badge badge-info">تایید موجودی</span>';
+                } else if (request.status === 'تحویل داده شده') {
+                    statusBadge = '<span class="badge badge-success">تحویل داده شده</span>';
+                } else if (request.status === 'بازگشت داده شده') {
+                    statusBadge = '<span class="badge badge-secondary">بازگشت داده شده</span>';
+                }
+                
+                // دکمه‌ها فقط برای درخواست‌های "در انتظار تایید"
+                let actionButtons = `
+                    <button onclick="viewDetails(${request.id})" class="btn-action btn-info" title="مشاهده جزئیات">
+                        👁️
+                    </button>
+                `;
+                
+                if (request.status === 'در انتظار تایید') {
+                    actionButtons += `
+                        <button onclick="openApproveModal(${request.id})" class="btn-action btn-success" title="تایید">
+                            ✓
+                        </button>
+                        <button onclick="openRejectModal(${request.id})" class="btn-action btn-danger" title="رد">
+                            ✗
+                        </button>
+                    `;
+                } else if (request.status === 'تحویل داده شده') {
+                    // دکمه برگشت فقط برای تحویل داده شده
+                    actionButtons += `
+                        <button onclick="openReturnModal(${request.id})" class="btn-action btn-warning" title="برگشت">
+                            ↩️ برگشت
+                        </button>
+                    `;
+                }
+                
+                return `
+                    <tr>
+                        <td>${toPersianNumber(request.id)}</td>
+                        <td>${request.department_name || 'نامشخص'}</td>
+                        <td>${request.user_name || 'نامشخص'}</td>
+                        <td>${toPersianNumber(request.items_count || 0)}</td>
+                        <td>${date}</td>
+                        <td>${statusBadge}</td>
+                        <td>${request.description || '-'}</td>
+                        <td>
+                            ${actionButtons}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function viewDetails(requestId) {
+            console.log('viewDetails called with requestId:', requestId);
+            try {
+                const response = await fetch(`http://localhost:3000/api/requests/${requestId}`);
+                const result = await response.json();
+
+                console.log('Details fetched:', result);
+
+                if (result.success && result.request) {
+                    const request = result.request;
+                    const date = new Date(request.created_at).toLocaleDateString('fa-IR');
+                    
+                    document.getElementById('detailRequestId').textContent = request.id;
+                    document.getElementById('detailUserName').textContent = request.user_name || 'نامشخص';
+                    document.getElementById('detailDate').textContent = date;
+                    document.getElementById('detailDescription').textContent = request.description || 'ندارد';
+                    
+                    // نمایش آیتم‌ها با امکان ویرایش (فقط برای درخواست‌های "در انتظار تایید")
+                    const itemsBody = document.getElementById('detailItemsBody');
+                    const isEditable = request.status === 'در انتظار تایید';
+                    
+                    if (request.items && request.items.length > 0) {
+                        if (isEditable) {
+                            // حالت قابل ویرایش
+                            itemsBody.innerHTML = request.items.map((item, index) => `
+                                <tr id="item-row-${item.id}">
+                                    <td>${index + 1}</td>
+                                    <td>${item.product_name || item.product_code || 'نامشخص'}</td>
+                                    <td>
+                                        <input type="number" 
+                                               id="quantity-${item.id}" 
+                                               value="${item.quantity}" 
+                                               min="1" 
+                                               style="width: 80px; padding: 5px;"
+                                               onchange="updateItemQuantity(${request.id}, ${item.id})">
+                                    </td>
+                                    <td>${item.description || '-'}</td>
+                                    <td>
+                                        <button onclick="deleteItem(${request.id}, ${item.id})" 
+                                                class="btn-action btn-danger" 
+                                                title="حذف">
+                                            🗑️
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            // حالت فقط خواندنی (تایید یا رد شده)
+                            itemsBody.innerHTML = request.items.map((item, index) => `
+                                <tr>
+                                    <td>${toPersianNumber(index + 1)}</td>
+                                    <td>${item.product_name || item.product_code || 'نامشخص'}</td>
+                                    <td>${toPersianNumber(item.quantity)}</td>
+                                    <td>${item.description || '-'}</td>
+                                    <td>-</td>
+                                </tr>
+                            `).join('');
+                        }
+                    } else {
+                        itemsBody.innerHTML = '<tr><td colspan="5" class="empty-state">اطلاعات کالاها موجود نیست</td></tr>';
+                    }
+                    
+                    document.getElementById('detailsModal').classList.add('active');
+                } else {
+                    alert('خطا در دریافت جزئیات درخواست');
+                }
+            } catch (error) {
+                console.error('خطا در دریافت جزئیات:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.remove('active');
+        }
+
+        // ویرایش تعداد آیتم
+        async function updateItemQuantity(requestId, itemId) {
+            const quantityInput = document.getElementById(`quantity-${itemId}`);
+            const newQuantity = parseInt(quantityInput.value);
+
+            if (newQuantity < 1) {
+                alert('تعداد باید بیشتر از صفر باشد');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/requests/${requestId}/items/${itemId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quantity: newQuantity })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('تعداد به‌روز شد');
+                    // بارگذاری مجدد جزئیات
+                    await viewDetails(requestId);
+                } else {
+                    alert(result.message || 'خطا در به‌روزرسانی');
+                }
+            } catch (error) {
+                console.error('خطا در به‌روزرسانی:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        // حذف آیتم
+        async function deleteItem(requestId, itemId) {
+            if (!confirm('آیا از حذف این آیتم اطمینان دارید؟')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/requests/${requestId}/items/${itemId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('آیتم حذف شد');
+                    // حذف ردیف از جدول
+                    const row = document.getElementById(`item-row-${itemId}`);
+                    if (row) row.remove();
+                    
+                    // بارگذاری مجدد لیست
+                    await loadDepartmentRequests();
+                } else {
+                    alert(result.message || 'خطا در حذف');
+                }
+            } catch (error) {
+                console.error('خطا در حذف:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        function openApproveModal(requestId) {
+            console.log('openApproveModal called with requestId:', requestId);
+            currentRequestId = requestId;
+            document.getElementById('approveRequestId').value = requestId;
+            document.getElementById('approveComment').value = '';
+            document.getElementById('approveModal').classList.add('active');
+            console.log('Modal should be open now');
+        }
+
+        function closeApproveModal() {
+            console.log('closeApproveModal called');
+            document.getElementById('approveModal').classList.remove('active');
+            currentRequestId = null;
+        }
+
+        document.getElementById('approveForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('Approve form submitted');
+            
+            const requestId = document.getElementById('approveRequestId').value;
+            const comment = document.getElementById('approveComment').value;
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+            console.log('Approving request:', requestId, 'by user:', currentUser.id);
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/requests/${requestId}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        comment: comment,
+                        userId: currentUser.id
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('درخواست با موفقیت تایید شد');
+                    closeApproveModal();
+                    await loadDepartmentRequests();
+                } else {
+                    alert(result.message || 'خطا در تایید درخواست');
+                }
+            } catch (error) {
+                console.error('خطا در تایید درخواست:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        });
+
+        function openRejectModal(requestId) {
+            console.log('openRejectModal called with requestId:', requestId);
+            currentRequestId = requestId;
+            document.getElementById('rejectRequestId').value = requestId;
+            document.getElementById('rejectComment').value = '';
+            document.getElementById('rejectModal').classList.add('active');
+            console.log('Reject modal should be open now');
+        }
+
+        function closeRejectModal() {
+            console.log('closeRejectModal called');
+            document.getElementById('rejectModal').classList.remove('active');
+            currentRequestId = null;
+        }
+
+        document.getElementById('rejectForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('Reject form submitted');
+            
+            const requestId = document.getElementById('rejectRequestId').value;
+            const comment = document.getElementById('rejectComment').value;
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+            console.log('Rejecting request:', requestId, 'by user:', currentUser.id);
+
+            if (!confirm('آیا از رد این درخواست اطمینان دارید؟')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/requests/${requestId}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        comment: comment,
+                        userId: currentUser.id
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('درخواست رد شد');
+                    closeRejectModal();
+                    await loadDepartmentRequests();
+                } else {
+                    alert(result.message || 'خطا در رد درخواست');
+                }
+            } catch (error) {
+                console.error('خطا در رد درخواست:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        });
+
+        // توابع برگشت درخواست
+        function openReturnModal(requestId) {
+            console.log('openReturnModal called with requestId:', requestId);
+            currentRequestId = requestId;
+            document.getElementById('returnRequestId').value = requestId;
+            document.getElementById('returnComment').value = '';
+            document.getElementById('returnModal').classList.add('active');
+        }
+
+        function closeReturnModal() {
+            document.getElementById('returnModal').classList.remove('active');
+            currentRequestId = null;
+        }
+
+        document.getElementById('returnForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const requestId = document.getElementById('returnRequestId').value;
+            const comment = document.getElementById('returnComment').value;
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+            if (!confirm('آیا از برگشت این درخواست اطمینان دارید؟')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/requests/${requestId}/return`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        comment: comment || 'برگشت داده شد',
+                        userId: currentUser.id
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('درخواست با موفقیت برگشت داده شد');
+                    closeReturnModal();
+                    await loadDepartmentRequests();
+                } else {
+                    alert(result.message || 'خطا در برگشت درخواست');
+                }
+            } catch (error) {
+                console.error('خطا در برگشت درخواست:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        });
+    </script>
+</body>
+</html>

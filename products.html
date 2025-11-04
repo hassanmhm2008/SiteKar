@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت کالاها - سیستم مدیریت</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>سیستم مدیریت</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span> داشبورد
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <span>✓</span> کارها
+                </a>
+                <a href="requests.html" class="nav-item">
+                    <span>📦</span> درخواست‌ها
+                </a>
+                <a href="department-requests.html" class="nav-item admin-menu" data-page="department-requests">
+                    <span>📋</span> درخواست‌های واحد
+                </a>
+                <a href="warehouse-requests.html" class="nav-item admin-menu" data-page="warehouse-requests">
+                    <span>🏭</span> درخواست‌های انبار
+                </a>                
+                <div class="nav-item-parent admin-menu" onclick="toggleSubmenu(this)">
+                    <span>⚙️</span> تنظیمات
+                </div>
+                <div class="nav-submenu admin-menu">
+                    <a href="users.html" class="nav-item">
+                        <span>👥</span> مدیریت کاربران
+                    </a>
+                    <a href="departments.html" class="nav-item">
+                        <span>🏢</span> واحدها
+                    </a>
+                    <a href="products.html" class="nav-item active">
+                        <span>📋</span> مدیریت کالاها
+                    </a>
+                    <a href="permissions.html" class="nav-item">
+                        <span>🔐</span> دسترسی‌ها
+                    </a>
+                    <a href="reports.html" class="nav-item">
+                        <span>📈</span> گزارش‌ها
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="currentUserInfo">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name"></span>
+                        <span class="user-role"></span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary btn-logout">خروج</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1>مدیریت کالاها</h1>
+                <div class="header-actions">
+                    <button onclick="openProductModal()" class="btn btn-primary">+ افزودن کالا</button>
+                </div>
+            </header>
+
+            <div class="content-section">
+                <div class="filters">
+                    <select id="categoryFilter" onchange="filterProducts()">
+                        <option value="">همه دسته‌ها</option>
+                    </select>
+                    <select id="activeFilter" onchange="filterProducts()">
+                        <option value="">همه</option>
+                        <option value="true">فعال</option>
+                        <option value="false">غیرفعال</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>کد کالا</th>
+                                <th>نام</th>
+                                <th>دسته‌بندی</th>
+                                <th>واحد</th>
+                                <th>وضعیت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <tr>
+                                <td colspan="6" class="empty-state">در حال بارگذاری...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal افزودن/ویرایش کالا -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">افزودن کالای جدید</h2>
+                <button onclick="closeProductModal()" class="modal-close">&times;</button>
+            </div>
+            <form id="productForm" class="modal-form">
+                <input type="hidden" id="productId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="code">کد کالا *</label>
+                        <input type="text" id="code" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">نام کالا *</label>
+                        <input type="text" id="name" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">توضیحات</label>
+                    <textarea id="description" rows="3"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="category">دسته‌بندی</label>
+                        <input type="text" id="category" list="categories">
+                        <datalist id="categories"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="unit">واحد</label>
+                        <select id="unit">
+                            <option value="عدد">عدد</option>
+                            <option value="بسته">بسته</option>
+                            <option value="کارتن">کارتن</option>
+                            <option value="کیلوگرم">کیلوگرم</option>
+                            <option value="لیتر">لیتر</option>
+                            <option value="متر">متر</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="is_active" checked>
+                        <span>فعال</span>
+                    </label>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">ذخیره</button>
+                    <button type="button" onclick="closeProductModal()" class="btn btn-secondary">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="api.js"></script>
+    <script>
+        checkAuth();
+        displayCurrentUser();
+        
+        (async function() {
+            await checkCurrentPageAccess();
+            await checkPagePermissions();
+            initializeMenu();
+        })();
+
+        let editingProductId = null;
+
+        async function loadProducts() {
+            try {
+                const result = await productsAPI.getAll();
+                
+                if (result.success && result.products) {
+                    displayProducts(result.products);
+                } else {
+                    console.error('خطا در دریافت کالاها:', result);
+                    displayProducts([]);
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری کالاها:', error);
+                displayProducts([]);
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                const result = await productsAPI.getCategories();
+                
+                if (result.success && result.categories) {
+                    const datalist = document.getElementById('categories');
+                    datalist.innerHTML = result.categories.map(cat => `<option value="${cat}">`).join('');
+                    
+                    const filter = document.getElementById('categoryFilter');
+                    filter.innerHTML = '<option value="">همه دسته‌ها</option>' +
+                        result.categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری دسته‌بندی‌ها:', error);
+            }
+        }
+
+        function displayProducts(products) {
+            const tbody = document.getElementById('productsTableBody');
+
+            if (!products || products.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">هیچ کالایی ثبت نشده است</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = products.map(product => `
+                <tr>
+                    <td>${product.code}</td>
+                    <td>${product.name}</td>
+                    <td>${product.category || '-'}</td>
+                    <td>${product.unit}</td>
+                    <td><span class="badge badge-${product.is_active ? 'completed' : 'cancelled'}">${product.is_active ? 'فعال' : 'غیرفعال'}</span></td>
+                    <td>
+                        <button onclick="editProduct(${product.id})" class="btn-icon" title="ویرایش">✏️</button>
+                        <button onclick="deleteProduct(${product.id})" class="btn-icon" title="حذف">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openProductModal(productId = null) {
+            const modal = document.getElementById('productModal');
+            const form = document.getElementById('productForm');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            form.reset();
+            editingProductId = productId;
+            loadCategories();
+
+            if (productId) {
+                modalTitle.textContent = 'ویرایش کالا';
+                loadProductData(productId);
+            } else {
+                modalTitle.textContent = 'افزودن کالای جدید';
+                document.getElementById('is_active').checked = true;
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        async function loadProductData(productId) {
+            try {
+                const result = await productsAPI.getAll();
+                
+                if (!result.success || !result.products) {
+                    console.error('خطا در دریافت اطلاعات کالا');
+                    return;
+                }
+                
+                const product = result.products.find(p => p.id === productId);
+                
+                if (product) {
+                    document.getElementById('productId').value = product.id;
+                    document.getElementById('code').value = product.code;
+                    document.getElementById('name').value = product.name;
+                    document.getElementById('description').value = product.description || '';
+                    document.getElementById('category').value = product.category || '';
+                    document.getElementById('unit').value = product.unit;
+                    document.getElementById('is_active').checked = product.is_active;
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری اطلاعات کالا:', error);
+            }
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').style.display = 'none';
+            editingProductId = null;
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const productData = {
+                code: document.getElementById('code').value,
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                category: document.getElementById('category').value,
+                unit: document.getElementById('unit').value,
+                is_active: document.getElementById('is_active').checked
+            };
+
+            try {
+                let result;
+                if (editingProductId) {
+                    result = await productsAPI.update(editingProductId, productData);
+                } else {
+                    result = await productsAPI.create(productData);
+                }
+                
+                if (result.success) {
+                    closeProductModal();
+                    await loadProducts();
+                    alert(editingProductId ? 'کالا با موفقیت ویرایش شد' : 'کالا با موفقیت افزوده شد');
+                } else {
+                    alert(result.message || 'خطا در ذخیره اطلاعات');
+                }
+            } catch (error) {
+                console.error('خطا:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        });
+
+        function editProduct(productId) {
+            openProductModal(productId);
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('آیا از حذف این کالا اطمینان دارید؟')) return;
+
+            try {
+                const result = await productsAPI.delete(productId);
+                
+                if (result.success) {
+                    alert('کالا با موفقیت حذف شد');
+                    await loadProducts();
+                } else {
+                    alert(result.message || 'خطا در حذف کالا');
+                }
+            } catch (error) {
+                console.error('خطا:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        async function filterProducts() {
+            const category = document.getElementById('categoryFilter').value;
+            const active = document.getElementById('activeFilter').value;
+            
+            const filters = {};
+            if (category) filters.category = category;
+            if (active) filters.active = active;
+
+            try {
+                const result = await productsAPI.getAll(filters);
+                
+                if (result.success && result.products) {
+                    displayProducts(result.products);
+                } else {
+                    displayProducts([]);
+                }
+            } catch (error) {
+                console.error('خطا در فیلتر کردن:', error);
+                displayProducts([]);
+            }
+        }
+
+        loadProducts();
+        loadCategories();
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('productModal');
+            if (event.target === modal) {
+                closeProductModal();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تست دکمه کاربران</title>
+</head>
+<body>
+    <h1>تست دکمه افزودن کاربر</h1>
+    <button onclick="testButton()">تست کلیک</button>
+    <div id="result"></div>
+
+    <script>
+        function testButton() {
+            document.getElementById('result').innerHTML = '✅ دکمه کار می‌کند!';
+            console.log('دکمه کلیک شد');
+        }
+
+        // بارگذاری users.html در iframe برای تست
+        window.addEventListener('load', () => {
+            const iframe = document.createElement('iframe');
+            iframe.src = 'users.html';
+            iframe.style.width = '100%';
+            iframe.style.height = '600px';
+            iframe.style.border = '1px solid #ccc';
+            iframe.style.marginTop = '20px';
+            
+            iframe.onload = function() {
+                console.log('users.html بارگذاری شد');
+                
+                // بررسی خطاها
+                iframe.contentWindow.addEventListener('error', (e) => {
+                    console.error('خطا در users.html:', e.message);
+                    document.getElementById('result').innerHTML = '❌ خطا: ' + e.message;
+                });
+            };
+            
+            document.body.appendChild(iframe);
+        });
+    </script>
+</body>
+</html>

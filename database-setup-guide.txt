@@ -1,0 +1,27 @@
+-- راهنمای نصب دیتابیس با phpMyAdmin
+-- 
+-- مراحل کار:
+-- 1. XAMPP را استارت کنید (Apache و MySQL)
+-- 2. به http://localhost/phpmyadmin بروید
+-- 3. از منوی چپ، New را بزنید
+-- 4. نام دیتابیس را sitekar_db بگذارید
+-- 5. Collation را utf8mb4_unicode_ci انتخاب کنید
+-- 6. دکمه Create را بزنید
+-- 7. روی نام دیتابیس (sitekar_db) کلیک کنید
+-- 8. به تب Import بروید
+-- 9. فایل database.sql را انتخاب کنید
+-- 10. دکمه Go را بزنید
+
+-- یا اگر می‌خواهید دستی وارد کنید:
+-- 1. New Query تب را باز کنید
+-- 2. محتوای زیر را کپی و Paste کنید:
+
+CREATE DATABASE IF NOT EXISTS sitekar_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE sitekar_db;
+
+-- بعد از اینکه دیتابیس ایجاد شد
+-- محتوای فایل database.sql را در Query Editor بگذارید و اجرا کنید
+
+-- تست اتصال:
+-- SELECT * FROM users;
+-- اگر کاربر admin را دیدید، نصب موفق بوده است!

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گزارش‌ها - مدیریت کار و درخواست</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="jalali-calendar.css">
+    
+    <style>
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            font-family: 'Vazir', Tahoma, sans-serif;
+        }
+        .tab.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .report-filters {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            width: 220px;
+            min-width: 220px;
+            position: relative;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-family: 'Vazir', Tahoma, sans-serif;
+        }
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Vazir', Tahoma, sans-serif;
+        }
+        .filter-group input[type="text"] {
+            padding: 10px 35px;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>');
+            background-repeat: no-repeat;
+            background-position: 8px center;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            direction: ltr;
+            font-family: 'Vazir', Tahoma, sans-serif;
+        }
+        .filter-group input[type="text"]:focus {
+            outline: 2px solid #007bff;
+            border-color: #007bff;
+        }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .summary-card h3 {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .summary-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>سیستم مدیریت</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span> داشبورد
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <span>✓</span> کارها
+                </a>
+                <a href="requests.html" class="nav-item">
+                    <span>📦</span> درخواست‌ها
+                </a>
+                <a href="department-requests.html" class="nav-item admin-menu" data-page="department-requests">
+                    <span>📋</span> درخواست‌های واحد
+                </a>
+                <a href="warehouse-requests.html" class="nav-item admin-menu" data-page="warehouse-requests">
+                    <span>🏭</span> درخواست‌های انبار
+                </a>                
+                <div class="nav-item-parent admin-menu" onclick="toggleSubmenu(this)">
+                    <span>⚙️</span> تنظیمات
+                </div>
+                <div class="nav-submenu admin-menu">
+                    <a href="users.html" class="nav-item">
+                        <span>👥</span> مدیریت کاربران
+                    </a>
+                    <a href="departments.html" class="nav-item">
+                        <span>🏢</span> واحدها
+                    </a>
+                    <a href="products.html" class="nav-item">
+                        <span>📋</span> مدیریت کالاها
+                    </a>
+                    <a href="permissions.html" class="nav-item">
+                        <span>🔐</span> دسترسی‌ها
+                    </a>
+                    <a href="reports.html" class="nav-item active">
+                        <span>📈</span> گزارش‌ها
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="currentUserInfo">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name"></span>
+                        <span class="user-role"></span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary btn-logout">خروج</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1>گزارش‌ها</h1>
+            </header>
+
+            <div class="content-section">
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('requests')">گزارش درخواست‌ها</button>
+                    <button class="tab" onclick="switchTab('departments')">گزارش بر اساس واحد</button>
+                    <button class="tab" onclick="switchTab('products')">گزارش محصولات تجمیعی</button>
+                </div>
+
+                <!-- Tab 1: گزارش درخواست‌ها -->
+                <div id="tab-requests" class="tab-content active">
+                    <div class="report-filters">
+                        <h3>فیلترها</h3>
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label>وضعیت:</label>
+                                <select id="status1">
+                                    <option value="">همه</option>
+                                    <option value="ارسال نشده">ارسال نشده</option>
+                                    <option value="در انتظار تایید">در انتظار تایید</option>
+                                    <option value="تایید رئیس">تایید رئیس</option>
+                                    <option value="رد شده">رد شده</option>
+                                    <option value="تایید موجودی">تایید موجودی</option>
+                                    <option value="تحویل داده شده">تحویل داده شده</option>
+                                    <option value="بازگشت داده شده">بازگشت داده شده</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>از تاریخ (شمسی):</label>
+                                <input type="text" id="fromDate1" placeholder="1403/01/01" dir="ltr">
+                            </div>
+                            <div class="filter-group">
+                                <label>تا تاریخ (شمسی):</label>
+                                <input type="text" id="toDate1" placeholder="1403/12/29" dir="ltr">
+                            </div>
+                            <div class="filter-group" style="display: flex; align-items: flex-end; gap: 10px;">
+                                <button onclick="loadRequestsReport()" class="btn btn-primary">نمایش گزارش</button>
+                                <button onclick="downloadReport('requests')" class="btn btn-success">دریافت PDF</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ردیف</th>
+                                    <th>شماره</th>
+                                    <th>کاربر</th>
+                                    <th>واحد</th>
+                                    <th>تعداد اقلام</th>
+                                    <th>وضعیت</th>
+                                    <th>تاریخ ایجاد</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestsReportBody">
+                                <tr><td colspan="7" class="empty-state">گزارشی موجود نیست</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 2: گزارش بر اساس واحد -->
+                <div id="tab-departments" class="tab-content">
+                    <div class="report-filters">
+                        <h3>فیلترها</h3>
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label>وضعیت:</label>
+                                <select id="status2">
+                                    <option value="">همه</option>
+                                    <option value="ارسال نشده">ارسال نشده</option>
+                                    <option value="در انتظار تایید">در انتظار تایید</option>
+                                    <option value="تایید رئیس">تایید رئیس</option>
+                                    <option value="رد شده">رد شده</option>
+                                    <option value="تایید موجودی">تایید موجودی</option>
+                                    <option value="تحویل داده شده">تحویل داده شده</option>
+                                    <option value="بازگشت داده شده">بازگشت داده شده</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>از تاریخ (شمسی):</label>
+                                <input type="text" id="fromDate2" placeholder="1403/01/01" dir="ltr">
+                            </div>
+                            <div class="filter-group">
+                                <label>تا تاریخ (شمسی):</label>
+                                <input type="text" id="toDate2" placeholder="1403/12/29" dir="ltr">
+                            </div>
+                            <div class="filter-group" style="display: flex; align-items: flex-end; gap: 10px;">
+                                <button onclick="loadDepartmentsReport()" class="btn btn-primary">نمایش گزارش</button>
+                                <button onclick="downloadReport('departments')" class="btn btn-success">دریافت PDF</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ردیف</th>
+                                    <th>واحد</th>
+                                    <th>تعداد درخواست‌ها</th>
+                                    <th>تعداد کل اقلام</th>
+                                </tr>
+                            </thead>
+                            <tbody id="departmentsReportBody">
+                                <tr><td colspan="4" class="empty-state">گزارشی موجود نیست</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 3: گزارش محصولات تجمیعی -->
+                <div id="tab-products" class="tab-content">
+                    <div class="report-filters">
+                        <h3>فیلترها</h3>
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label>وضعیت:</label>
+                                <select id="status3">
+                                    <option value="">همه</option>
+                                    <option value="ارسال نشده">ارسال نشده</option>
+                                    <option value="در انتظار تایید">در انتظار تایید</option>
+                                    <option value="تایید رئیس">تایید رئیس</option>
+                                    <option value="رد شده">رد شده</option>
+                                    <option value="تایید موجودی">تایید موجودی</option>
+                                    <option value="تحویل داده شده">تحویل داده شده</option>
+                                    <option value="بازگشت داده شده">بازگشت داده شده</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>از تاریخ (شمسی):</label>
+                                <input type="text" id="fromDate3" placeholder="1403/01/01" dir="ltr">
+                            </div>
+                            <div class="filter-group">
+                                <label>تا تاریخ (شمسی):</label>
+                                <input type="text" id="toDate3" placeholder="1403/12/29" dir="ltr">
+                            </div>
+                            <div class="filter-group" style="display: flex; align-items: flex-end; gap: 10px;">
+                                <button onclick="loadProductsReport()" class="btn btn-primary">نمایش گزارش</button>
+                                <button onclick="downloadReport('products')" class="btn btn-success">دریافت PDF</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ردیف</th>
+                                    <th>نام محصول</th>
+                                    <th>تعداد کل</th>
+                                    <th>تعداد درخواست‌ها</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsReportBody">
+                                <tr><td colspan="4" class="empty-state">گزارشی موجود نیست</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- pdfMake for PDF generation با پشتیبانی فارسی -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+    <script src="jalali-calendar.js"></script>
+    <script>
+        checkAuth();
+        displayCurrentUser();
+        
+        let userPermissions = {};
+        
+        (async function() {
+            await checkCurrentPageAccess();
+            await checkPagePermissions();
+            await loadUserReportPermissions();
+            initializeMenu();
+            initializeTabs();
+            initializeDatePickers(); // راه‌اندازی تقویم‌های شمسی
+        })();
+
+        // راه‌اندازی فیلدهای تاریخ با تاریخ امروز به صورت پیش‌فرض
+        function initializeDatePickers() {
+            const dateFields = ['fromDate1', 'toDate1', 'fromDate2', 'toDate2', 'fromDate3', 'toDate3'];
+            initJalaliDatePickers(dateFields, true);
+        }
+
+        // بارگذاری دسترسی‌های کاربر به هر گزارش
+        async function loadUserReportPermissions() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (!currentUser) return;
+
+            try {
+                const result = await permissionsAPI.getByRole(currentUser.role);
+                if (result.success && result.permissions) {
+                    result.permissions.forEach(p => {
+                        if (p.page_name.startsWith('reports-')) {
+                            userPermissions[p.page_name] = !!p.has_access;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری دسترسی‌های گزارش:', error);
+            }
+        }
+
+        // راه‌اندازی اولیه تب‌ها بر اساس دسترسی
+        function initializeTabs() {
+            // پنهان کردن تب‌هایی که کاربر دسترسی ندارد
+            const tabs = [
+                { name: 'requests', permission: 'reports-requests', button: document.querySelector('[onclick*="switchTab(\'requests\')"]') },
+                { name: 'departments', permission: 'reports-departments', button: document.querySelector('[onclick*="switchTab(\'departments\')"]') },
+                { name: 'products', permission: 'reports-products', button: document.querySelector('[onclick*="switchTab(\'products\')"]') }
+            ];
+
+            let firstAccessibleTab = null;
+
+            tabs.forEach(tab => {
+                if (!userPermissions[tab.permission]) {
+                    // پنهان کردن دکمه تب
+                    if (tab.button) tab.button.style.display = 'none';
+                    // پنهان کردن محتوای تب
+                    const content = document.getElementById(`tab-${tab.name}`);
+                    if (content) content.style.display = 'none';
+                } else if (!firstAccessibleTab) {
+                    firstAccessibleTab = tab.name;
+                }
+            });
+
+            // اگر هیچ دسترسی ندارد
+            if (!firstAccessibleTab) {
+                document.querySelector('.tabs').innerHTML = '<p style="text-align:center;padding:20px;">شما به هیچ گزارشی دسترسی ندارید</p>';
+                document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            } else {
+                // نمایش اولین تب قابل دسترس
+                switchTab(firstAccessibleTab);
+            }
+        }
+
+        function switchTab(tabName) {
+            // بررسی دسترسی
+            const permissionName = `reports-${tabName}`;
+            if (!userPermissions[permissionName]) {
+                alert('شما به این گزارش دسترسی ندارید');
+                return;
+            }
+
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // فعال کردن دکمه تب
+            const buttons = document.querySelectorAll('.tab');
+            buttons.forEach(btn => {
+                if (btn.getAttribute('onclick').includes(tabName)) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // تبدیل تاریخ شمسی به میلادی (ساده - نیاز به کتابخانه دقیق‌تر برای پروژه واقعی)
+        // تبدیل اعداد فارسی به انگلیسی
+        function persianToEnglishDigits(str) {
+            if (!str) return str;
+            const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            const englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            
+            for (let i = 0; i < 10; i++) {
+                str = str.replace(new RegExp(persianDigits[i], 'g'), englishDigits[i]);
+            }
+            return str;
+        }
+
+        // تبدیل تاریخ شمسی به میلادی
+        function persianToGregorian(persianDateStr) {
+            if (!persianDateStr) return null;
+            
+            try {
+                // تبدیل اعداد فارسی به انگلیسی
+                persianDateStr = persianToEnglishDigits(persianDateStr);
+                
+                console.log('تبدیل تاریخ شمسی:', persianDateStr);
+                
+                // پارس کردن تاریخ شمسی (فرمت: 1404/08/13)
+                const parts = persianDateStr.split('/');
+                if (parts.length === 3) {
+                    const jy = parseInt(parts[0]);
+                    const jm = parseInt(parts[1]);
+                    const jd = parseInt(parts[2]);
+                    
+                    // تبدیل به میلادی با الگوریتم
+                    const gDate = jalaliToGregorian(jy, jm, jd);
+                    const gregorianDate = `${gDate.gy}-${String(gDate.gm).padStart(2, '0')}-${String(gDate.gd).padStart(2, '0')}`;
+                    
+                    console.log('تاریخ میلادی:', gregorianDate);
+                    return gregorianDate;
+                }
+            } catch (error) {
+                console.error('خطا در تبدیل تاریخ:', error);
+            }
+            
+            return null;
+        }
+        
+        // تبدیل شمسی به میلادی (کتابخانه jalaali-js)
+        async function loadRequestsReport() {
+            try {
+                const status = document.getElementById('status1').value;
+                const fromDatePersian = document.getElementById('fromDate1').value;
+                const toDatePersian = document.getElementById('toDate1').value;
+                
+                const fromDate = persianToGregorian(fromDatePersian);
+                const toDate = persianToGregorian(toDatePersian);
+
+                console.log('فیلترهای گزارش:', { 
+                    status, 
+                    fromDatePersian, 
+                    toDatePersian,
+                    fromDate, 
+                    toDate 
+                });
+
+                const params = new URLSearchParams();
+                if (status) params.append('status', status);
+                if (fromDate) params.append('fromDate', fromDate);
+                if (toDate) params.append('toDate', toDate);
+
+                console.log('URL:', `http://localhost:3000/api/reports/requests?${params}`);
+
+                const response = await fetch(`http://localhost:3000/api/reports/requests?${params}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    displayRequestsReport(result.data);
+                } else {
+                    alert('خطا در دریافت گزارش');
+                }
+            } catch (error) {
+                console.error('خطا:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        function displayRequestsReport(data) {
+            const tbody = document.getElementById('requestsReportBody');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">گزارشی موجود نیست</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map((req, index) => `
+                <tr>
+                    <td>${toPersianNumber(index + 1)}</td>
+                    <td>${toPersianNumber(req.request_number || req.id)}</td>
+                    <td>${req.user_name}</td>
+                    <td>${req.department_name || '-'}</td>
+                    <td>${toPersianNumber(req.total_items || 0)}</td>
+                    <td><span class="badge badge-info">${req.status}</span></td>
+                    <td>${new Date(req.created_at).toLocaleDateString('fa-IR')}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadDepartmentsReport() {
+            try {
+                const status = document.getElementById('status2').value;
+                const fromDatePersian = document.getElementById('fromDate2').value;
+                const toDatePersian = document.getElementById('toDate2').value;
+                
+                const fromDate = persianToGregorian(fromDatePersian);
+                const toDate = persianToGregorian(toDatePersian);
+
+                console.log('فیلترهای گزارش واحدها:', { status, fromDatePersian, toDatePersian, fromDate, toDate });
+
+                const params = new URLSearchParams();
+                if (fromDate) params.append('fromDate', fromDate);
+                if (toDate) params.append('toDate', toDate);
+                if (status) params.append('status', status);
+
+                const response = await fetch(`http://localhost:3000/api/reports/by-department?${params}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    displayDepartmentsReport(result.data);
+                } else {
+                    alert('خطا در دریافت گزارش');
+                }
+            } catch (error) {
+                console.error('خطا:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        function displayDepartmentsReport(data) {
+            const tbody = document.getElementById('departmentsReportBody');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">گزارشی موجود نیست</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map((dept, index) => `
+                <tr>
+                    <td>${toPersianNumber(index + 1)}</td>
+                    <td>${dept.department_name || 'نامشخص'}</td>
+                    <td>${toPersianNumber(dept.request_count)}</td>
+                    <td>${toPersianNumber(dept.total_items)}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadProductsReport() {
+            try {
+                const status = document.getElementById('status3').value;
+                const fromDatePersian = document.getElementById('fromDate3').value;
+                const toDatePersian = document.getElementById('toDate3').value;
+                
+                const fromDate = persianToGregorian(fromDatePersian);
+                const toDate = persianToGregorian(toDatePersian);
+
+                console.log('فیلترهای گزارش محصولات:', { status, fromDatePersian, toDatePersian, fromDate, toDate });
+
+                const params = new URLSearchParams();
+                if (status) params.append('status', status);
+                if (fromDate) params.append('fromDate', fromDate);
+                if (toDate) params.append('toDate', toDate);
+
+                const response = await fetch(`http://localhost:3000/api/reports/products-aggregate?${params}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    displayProductsReport(result.data);
+                } else {
+                    alert('خطا در دریافت گزارش');
+                }
+            } catch (error) {
+                console.error('خطا:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        function displayProductsReport(data) {
+            const tbody = document.getElementById('productsReportBody');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">گزارشی موجود نیست</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map((product, index) => `
+                <tr>
+                    <td>${toPersianNumber(index + 1)}</td>
+                    <td>${product.product_name}</td>
+                    <td>${toPersianNumber(product.total_quantity)}</td>
+                    <td>${toPersianNumber(product.request_count)}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // دریافت گزارش به صورت PDF یا Excel
+    async function downloadReport(reportType) {
+            let data, reportTitle, headers, rows;
+            let statusText = 'همه';
+            let fromDatePersianValue = '';
+            let toDatePersianValue = '';
+            
+            // دریافت داده‌ها و فیلترها بر اساس نوع گزارش
+            if (reportType === 'requests') {
+                const status = document.getElementById('status1').value;
+                const fromDatePersian = document.getElementById('fromDate1').value;
+                const toDatePersian = document.getElementById('toDate1').value;
+                const fromDate = persianToGregorian(fromDatePersian);
+                const toDate = persianToGregorian(toDatePersian);
+                
+                let url = `${API_BASE_URL}/reports/requests?`;
+                if (fromDate) url += `fromDate=${fromDate}&`;
+                if (toDate) url += `toDate=${toDate}&`;
+                if (status) url += `status=${status}`;
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                data = result.data || result;
+                
+                reportTitle = 'گزارش درخواست‌ها';
+                statusText = status || 'همه';
+                fromDatePersianValue = fromDatePersian;
+                toDatePersianValue = toDatePersian;
+                headers = ['ردیف', 'شماره', 'کاربر', 'واحد', 'تعداد اقلام', 'وضعیت', 'تاریخ ایجاد'];
+                rows = data.map((item, index) => {
+                    const date = new Date(item.created_at);
+                    const jDate = gregorianToJalali(date.getFullYear(), date.getMonth() + 1, date.getDate());
+                    const persianDate = `${jDate.jy}/${jDate.jm}/${jDate.jd}`;
+                    return [
+                        toPersianDigits(index + 1),
+                        toPersianDigits(item.request_number || item.id),
+                        item.user_name,
+                        item.department_name,
+                        toPersianDigits(item.item_count),
+                        item.status,
+                        persianDate
+                    ];
+                });
+                
+            } else if (reportType === 'departments') {
+                const status = document.getElementById('status2').value;
+                const fromDatePersian = document.getElementById('fromDate2').value;
+                const toDatePersian = document.getElementById('toDate2').value;
+                const fromDate = persianToGregorian(fromDatePersian);
+                const toDate = persianToGregorian(toDatePersian);
+                
+                let url = `${API_BASE_URL}/reports/by-department?`;
+                if (fromDate) url += `fromDate=${fromDate}&`;
+                if (toDate) url += `toDate=${toDate}&`;
+                if (status) url += `status=${status}`;
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                data = result.data || result;
+                
+                reportTitle = 'گزارش بر اساس واحد';
+                statusText = status || 'همه';
+                fromDatePersianValue = fromDatePersian;
+                toDatePersianValue = toDatePersian;
+                headers = ['ردیف', 'نام واحد', 'تعداد درخواست‌ها', 'تعداد کل اقلام'];
+                rows = data.map((item, index) => [
+                    toPersianDigits(index + 1),
+                    item.department_name,
+                    toPersianDigits(item.request_count),
+                    toPersianDigits(item.total_items)
+                ]);
+                
+            } else if (reportType === 'products') {
+                const status = document.getElementById('status3').value;
+                const fromDatePersian = document.getElementById('fromDate3').value;
+                const toDatePersian = document.getElementById('toDate3').value;
+                const fromDate = persianToGregorian(fromDatePersian);
+                const toDate = persianToGregorian(toDatePersian);
+                
+                let url = `${API_BASE_URL}/reports/products-aggregate?`;
+                if (fromDate) url += `fromDate=${fromDate}&`;
+                if (toDate) url += `toDate=${toDate}&`;
+                if (status) url += `status=${status}`;
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                data = result.data || result;
+                
+                reportTitle = 'گزارش محصولات تجمیعی';
+                statusText = status || 'همه';
+                fromDatePersianValue = fromDatePersian;
+                toDatePersianValue = toDatePersian;
+                headers = ['شماره', 'نام محصول', 'مجموع تعداد', 'تعداد درخواست‌ها'];
+                rows = data.map((item, index) => [
+                    toPersianDigits(index + 1),
+                    item.product_name,
+                    toPersianDigits(item.total_quantity),
+                    toPersianDigits(item.request_count)
+                ]);
+            }
+            
+            const fromDisplay = toPersianDigits(fromDatePersianValue || '-');
+            const toDisplay = toPersianDigits(toDatePersianValue || '-');
+            const cleanTitle = reportTitle.replace(/^گزارش\s*/u, '');
+            const displayTitle = `گزارش ${cleanTitle}`;
+            // نمایش فیلترها به ترتیب: تاریخ سپس وضعیت
+            const filtersLine = `تاریخ: ${fromDisplay} تا ${toDisplay}` + (statusText ? `    وضعیت: ${statusText}` : '');
+
+            await generatePDF(reportTitle, displayTitle, filtersLine, headers, rows);
+        }
+        
+        let pdfFontLoaded = false;
+
+        async function ensurePdfFont() {
+            if (pdfFontLoaded) return;
+            try {
+                const [regularRes, boldRes] = await Promise.all([
+                    fetch('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Regular.ttf'),
+                    fetch('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Bold.ttf')
+                ]);
+
+                if (!regularRes.ok || !boldRes.ok) {
+                    throw new Error('دانلود فونت با خطا مواجه شد');
+                }
+
+                const [regularBuffer, boldBuffer] = await Promise.all([
+                    regularRes.arrayBuffer(),
+                    boldRes.arrayBuffer()
+                ]);
+
+                pdfMake.vfs['Vazir-Regular.ttf'] = arrayBufferToBase64(regularBuffer);
+                pdfMake.vfs['Vazir-Bold.ttf'] = arrayBufferToBase64(boldBuffer);
+                pdfMake.fonts = {
+                    ...(pdfMake.fonts || {}),
+                    Vazir: {
+                        normal: 'Vazir-Regular.ttf',
+                        bold: 'Vazir-Bold.ttf',
+                        italics: 'Vazir-Regular.ttf',
+                        bolditalics: 'Vazir-Bold.ttf'
+                    }
+                };
+
+                pdfFontLoaded = true;
+            } catch (error) {
+                console.error('خطا در بارگذاری فونت PDF:', error);
+                throw error;
+            }
+        }
+
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            const chunkSize = 0x8000;
+            const chunks = [];
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                const chunk = bytes.subarray(i, i + chunkSize);
+                chunks.push(String.fromCharCode.apply(null, chunk));
+            }
+            return btoa(chunks.join(''));
+        }
+
+        function toPersianDigits(str) {
+            if (!str) return '';
+            const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            let result = String(str).replace(/\d/g, digit => persianDigits[parseInt(digit)]);
+            
+            // اگر تاریخ است (شامل /)، هر عدد را به صورت جداگانه معکوس می‌کنیم
+            if (result.includes('/')) {
+                // هر عدد را به صورت مجزا معکوس می‌کنیم
+                result = result.split('').reverse().join('');
+            }
+            
+            return result;
+        }
+
+        function fixRTLText(text, isDate = false) {
+            if (!text) return '';
+            const str = String(text);
+            
+            // اگر متن تاریخ است، فقط اعداد را به فارسی تبدیل می‌کنیم
+            const hasSlash = str.includes('/');
+            const hasOnlyDigitsAndSlash = /^[\d\u06F0-\u06F9\/\s]+$/.test(str.trim());
+            
+            if (hasSlash && hasOnlyDigitsAndSlash) {
+                // فقط اعداد را به فارسی تبدیل می‌کنیم، ترتیب را حفظ می‌کنیم
+                const result = toPersianDigits(str);
+                console.log('تبدیل تاریخ:', str, '→', result);
+                return result;
+            }
+            
+            // اگر متن فقط عدد است، به فارسی تبدیل می‌کنیم
+            if (/^\d+$/.test(str.trim())) {
+                return toPersianDigits(str);
+            }
+            
+            // اگر متن شامل حروف فارسی است، کلمات را معکوس می‌کنیم
+            const persianRegex = /[\u0600-\u06FF]/;
+            if (persianRegex.test(str)) {
+                // جدا کردن کلمات و معکوس کردن ترتیب آنها
+                const words = str.split(' ');
+                return words.reverse().join(' ');
+            }
+            
+            // اعداد را به فارسی تبدیل می‌کنیم
+            return toPersianDigits(str);
+        }
+
+        // ساخت فایل PDF با pdfMake (پشتیبانی کامل فارسی)
+        async function generatePDF(reportTitle, displayTitle, filtersLine, headers, rows) {
+            // تولید تاریخ فارسی با اعداد فارسی
+            const today = new Date();
+            const jDate = gregorianToJalali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+            const currentDate = toPersianDigits(`${jDate.jy}/${String(jDate.jm).padStart(2, '0')}/${String(jDate.jd).padStart(2, '0')}`);
+
+            try {
+                await ensurePdfFont();
+            } catch (error) {
+                alert('خطا در بارگذاری فونت گزارش PDF. لطفاً دوباره تلاش کنید.');
+                return;
+            }
+
+            // بارگذاری لوگو
+            let logoBase64 = '';
+            try {
+                const response = await fetch('لوگو پالايش گاز هويزه.jpg');
+                const blob = await response.blob();
+                logoBase64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (error) {
+                console.error('خطا در بارگذاری لوگو:', error);
+            }
+
+            const columnCount = headers.length;
+
+            // آماده‌سازی ردیف‌های جدول - معکوس برای نمایش راست به چپ
+            const reversedHeaders = [...headers].reverse();
+            const reversedRows = rows.map(row => [...row].reverse());
+
+            const headerRow = reversedHeaders.map(h => ({ 
+                text: fixRTLText(h), 
+                style: 'tableHeader', 
+                alignment: 'center'
+            }));
+            const dataRows = reversedRows.map(row => row.map(cell => ({ 
+                text: fixRTLText(cell ?? ''), 
+                alignment: 'center'
+            })));
+
+            const tableBody = [headerRow, ...dataRows];
+            
+            // ذخیره متغیرها برای استفاده در header
+            const pdfDisplayTitle = displayTitle;
+            const pdfFiltersLine = filtersLine;
+            
+            console.log('PDF Titles:', { displayTitle, filtersLine, pdfDisplayTitle, pdfFiltersLine });
+
+            // تعریف سند PDF
+            const docDefinition = {
+                pageOrientation: 'landscape',
+                pageMargins: [40, 100, 40, 40],
+                defaultStyle: {
+                    font: 'Vazir',
+                    fontSize: 10,
+                    alignment: 'center'
+                },
+                images: {
+                    logo: logoBase64
+                },
+                header: {
+                    margin: [40, 20, 40, 0],
+                    stack: [
+                        {
+                            columns: [
+                                { image: 'logo', width: 80, alignment: 'left' },
+                                { text: '', width: '*' },
+                                { text: fixRTLText(`تاریخ دریافت گزارش: ${currentDate}`), fontSize: 10, alignment: 'right' }
+                            ]
+                        }
+                    ]
+                },
+                content: [
+                    { text: fixRTLText(pdfDisplayTitle), alignment: 'center', fontSize: 16, bold: true, margin: [0, 4, 0, 4] },
+                    { text: fixRTLText(pdfFiltersLine), alignment: 'center', fontSize: 11, margin: [0, 0, 0, 12] },
+                    {
+                        table: {
+                            headerRows: 1,
+                            widths: Array(columnCount).fill('*'),
+                            body: tableBody
+                        },
+                        layout: {
+                            fillColor: function (rowIndex) {
+                                if (rowIndex === 0) return '#4472C4';
+                                return (rowIndex >= 1 && rowIndex % 2 === 1) ? '#F8F9FB' : null;
+                            },
+                            hLineWidth: function () { return 0.5; },
+                            vLineWidth: function () { return 0.5; },
+                            hLineColor: function () { return '#CCCCCC'; },
+                            vLineColor: function () { return '#CCCCCC'; }
+                        }
+                    }
+                ],
+                styles: {
+                    tableHeader: {
+                        bold: true,
+                        fontSize: 11,
+                        color: 'white',
+                        fillColor: '#4472C4',
+                        alignment: 'center'
+                    }
+                }
+            };
+
+            pdfMake.createPdf(docDefinition).download(`${reportTitle}_${currentDate}.pdf`);
+        }
+        
+    </script>
+</body>
+</html>

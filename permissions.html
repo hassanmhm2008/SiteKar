@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت دسترسی‌ها - مدیریت کار و درخواست</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .permissions-grid {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .permissions-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .permissions-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .permissions-table td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .permissions-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .permissions-table .page-name {
+            text-align: right;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .permission-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .role-header {
+            writing-mode: horizontal-tb;
+            transform: none;
+            white-space: nowrap;
+        }
+
+        .save-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .btn-save {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .changes-indicator {
+            display: inline-block;
+            margin-right: 10px;
+            padding: 5px 15px;
+            background: #fbbf24;
+            color: #78350f;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .changes-indicator.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>سیستم مدیریت</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span> داشبورد
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <span>✓</span> کارها
+                </a>
+                <a href="requests.html" class="nav-item">
+                    <span>📦</span> درخواست‌ها
+                </a>
+                <a href="department-requests.html" class="nav-item admin-menu" data-page="department-requests">
+                    <span>📋</span> درخواست‌های واحد
+                </a>
+                <a href="warehouse-requests.html" class="nav-item admin-menu" data-page="warehouse-requests">
+                    <span>🏭</span> درخواست‌های انبار
+                </a>                
+                <div class="nav-item-parent admin-menu" onclick="toggleSubmenu(this)">
+                    <span>⚙️</span> تنظیمات
+                </div>
+                <div class="nav-submenu admin-menu">
+                    <a href="users.html" class="nav-item">
+                        <span>👥</span> مدیریت کاربران
+                    </a>
+                    <a href="departments.html" class="nav-item">
+                        <span>🏢</span> واحدها
+                    </a>
+                    <a href="products.html" class="nav-item">
+                        <span>📋</span> مدیریت کالاها
+                    </a>
+                    <a href="permissions.html" class="nav-item">
+                        <span>🔐</span> دسترسی‌ها
+                    </a>
+                    <a href="reports.html" class="nav-item">
+                        <span>📈</span> گزارش‌ها
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="currentUserInfo">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name"></span>
+                        <span class="user-role"></span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary btn-logout">خروج</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1>مدیریت دسترسی‌ها</h1>
+                <p class="page-description">تعیین سطح دسترسی نقش‌ها به صفحات مختلف</p>
+            </header>
+
+            <div class="content-section">
+                <div class="permissions-grid">
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th class="page-name">صفحه / نقش</th>
+                                <th class="role-header">مدیر</th>
+                                <th class="role-header">رئیس واحد</th>
+                                <th class="role-header">کارمند</th>
+                                <th class="role-header">کارشناس</th>
+                                <th class="role-header">انبار دار</th>
+                            </tr>
+                        </thead>
+                        <tbody id="permissionsTableBody">
+                            <tr>
+                                <td colspan="6" class="empty-state">در حال بارگذاری...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="save-section">
+                    <span class="changes-indicator hidden" id="changesIndicator">
+                        تغییرات ذخیره نشده
+                    </span>
+                    <button onclick="savePermissions()" class="btn-save" id="saveButton">
+                        💾 ذخیره تغییرات
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="api.js"></script>
+    <script>
+        checkAuth();
+        displayCurrentUser();
+        
+        (async function() {
+            await checkCurrentPageAccess();
+            await checkPagePermissions();
+            initializeMenu();
+            await loadPermissions();
+        })();
+
+        let permissionsData = [];
+        let hasChanges = false;
+
+        const pages = [
+            { name: 'dashboard', title: 'داشبورد' },
+            { name: 'tasks', title: 'کارها' },
+            { name: 'requests', title: 'درخواست‌ها' },
+            { name: 'products', title: 'مدیریت کالاها' },
+            { name: 'users', title: 'مدیریت کاربران' },
+            { name: 'departments', title: 'واحدها' },
+            { name: 'permissions', title: 'دسترسی‌ها' },
+            { name: 'department-requests', title: 'درخواست‌های واحد' },
+            { name: 'warehouse-requests', title: 'درخواست‌های انبار' },
+            { name: 'reports-requests', title: 'گزارش درخواست‌ها' },
+            { name: 'reports-departments', title: 'گزارش واحدها' },
+            { name: 'reports-products', title: 'گزارش محصولات' }
+        ];
+
+        const roles = ['مدیر', 'رئیس واحد', 'کارمند', 'کارشناس', 'انبار دار'];
+
+        async function loadPermissions() {
+            try {
+                const result = await permissionsAPI.getAll();
+                
+                if (result.success && result.permissions) {
+                    permissionsData = result.permissions;
+                    displayPermissions();
+                } else {
+                    console.error('خطا در دریافت دسترسی‌ها:', result);
+                    alert('خطا در بارگذاری دسترسی‌ها');
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری دسترسی‌ها:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        function displayPermissions() {
+            const tbody = document.getElementById('permissionsTableBody');
+            
+            tbody.innerHTML = pages.map(page => {
+                return `
+                    <tr>
+                        <td class="page-name">${page.title}</td>
+                        ${roles.map(role => {
+                            const permission = permissionsData.find(p => 
+                                p.role_name === role && p.page_name === page.name
+                            );
+                            const isChecked = permission ? permission.has_access : false;
+                            
+                            return `
+                                <td>
+                                    <input 
+                                        type="checkbox" 
+                                        class="permission-checkbox"
+                                        data-role="${role}"
+                                        data-page="${page.name}"
+                                        ${isChecked ? 'checked' : ''}
+                                        onchange="handlePermissionChange(this)"
+                                    />
+                                </td>
+                            `;
+                        }).join('')}
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function handlePermissionChange(checkbox) {
+            const role = checkbox.dataset.role;
+            const page = checkbox.dataset.page;
+            const hasAccess = checkbox.checked;
+
+            // به‌روزرسانی داده‌ها در حافظه
+            const permission = permissionsData.find(p => 
+                p.role_name === role && p.page_name === page
+            );
+            
+            if (permission) {
+                permission.has_access = hasAccess ? 1 : 0;
+            }
+
+            // نمایش اندیکیتور تغییرات
+            hasChanges = true;
+            document.getElementById('changesIndicator').classList.remove('hidden');
+        }
+
+        async function savePermissions() {
+            if (!hasChanges) {
+                alert('هیچ تغییری برای ذخیره وجود ندارد');
+                return;
+            }
+
+            const saveButton = document.getElementById('saveButton');
+            saveButton.disabled = true;
+            saveButton.textContent = '⏳ در حال ذخیره...';
+
+            try {
+                const result = await permissionsAPI.bulkUpdate(permissionsData);
+                
+                if (result.success) {
+                    alert('✓ دسترسی‌ها با موفقیت ذخیره شدند');
+                    hasChanges = false;
+                    document.getElementById('changesIndicator').classList.add('hidden');
+                    // پاک کردن کش محلی تا تغییرات جدید لود شوند
+                    try {
+                        localStorage.removeItem('permissionsMap');
+                        // اگر نقش فعلی تحت تاثیر است، مجدداً منوها را بروز کن
+                        if (typeof checkPagePermissions === 'function') {
+                            await checkPagePermissions();
+                            initializeMenu();
+                        }
+                    } catch (e) {
+                        console.error('Error refreshing permissions cache:', e);
+                    }
+                } else {
+                    alert('خطا در ذخیره دسترسی‌ها');
+                }
+            } catch (error) {
+                console.error('خطا در ذخیره دسترسی‌ها:', error);
+                alert('خطا در اتصال به سرور');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = '💾 ذخیره تغییرات';
+            }
+        }
+    </script>
+</body>
+</html>
+

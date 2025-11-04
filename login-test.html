@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست ورود با Console Log</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .log-box {
+            background: #f4f4f4;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            direction: ltr;
+            text-align: left;
+        }
+        .log-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        .log-error { color: red; }
+        .log-success { color: green; }
+        .log-info { color: blue; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 تست دیباگ ورود</h1>
+        
+        <div class="form-group">
+            <label>نام کاربری:</label>
+            <input type="text" id="username" value="admin">
+        </div>
+        
+        <div class="form-group">
+            <label>رمز عبور:</label>
+            <input type="password" id="password" value="admin123">
+        </div>
+        
+        <button onclick="testLogin()" class="btn btn-primary">تست ورود</button>
+        <button onclick="testAPI()" class="btn">تست اتصال API</button>
+        <button onclick="clearLogs()" class="btn">پاک کردن لاگ‌ها</button>
+        
+        <h3>📋 لاگ‌ها:</h3>
+        <div id="logBox" class="log-box"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+        
+        function addLog(message, type = 'info') {
+            const logBox = document.getElementById('logBox');
+            const logItem = document.createElement('div');
+            logItem.className = 'log-item log-' + type;
+            logItem.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            logBox.appendChild(logItem);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+        
+        function clearLogs() {
+            document.getElementById('logBox').innerHTML = '';
+        }
+        
+        async function testAPI() {
+            addLog('شروع تست اتصال به API...', 'info');
+            
+            try {
+                addLog('ارسال درخواست به: ' + API_BASE_URL + '/health', 'info');
+                
+                const response = await fetch(API_BASE_URL + '/health');
+                
+                addLog('وضعیت پاسخ: ' + response.status, 'info');
+                
+                const data = await response.json();
+                
+                addLog('پاسخ دریافت شد: ' + JSON.stringify(data), 'success');
+                
+                if (data.status === 'OK') {
+                    addLog('✅ اتصال به API موفق بود!', 'success');
+                }
+            } catch (error) {
+                addLog('❌ خطا: ' + error.message, 'error');
+                addLog('نوع خطا: ' + error.name, 'error');
+                addLog('Stack: ' + error.stack, 'error');
+            }
+        }
+        
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            addLog('==== شروع تست ورود ====', 'info');
+            addLog('نام کاربری: ' + username, 'info');
+            addLog('رمز عبور: ' + password, 'info');
+            
+            try {
+                const url = API_BASE_URL + '/auth/login';
+                addLog('URL: ' + url, 'info');
+                
+                const requestData = { username, password };
+                addLog('داده‌های ارسالی: ' + JSON.stringify(requestData), 'info');
+                
+                addLog('ارسال درخواست...', 'info');
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                addLog('وضعیت پاسخ: ' + response.status + ' ' + response.statusText, 'info');
+                addLog('هدرهای پاسخ: ' + JSON.stringify([...response.headers]), 'info');
+                
+                const data = await response.json();
+                addLog('پاسخ JSON: ' + JSON.stringify(data, null, 2), 'info');
+                
+                if (data.success) {
+                    addLog('✅ ورود موفقیت‌آمیز بود!', 'success');
+                    addLog('اطلاعات کاربر: ' + JSON.stringify(data.user), 'success');
+                    
+                    // ذخیره در localStorage
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    addLog('اطلاعات در localStorage ذخیره شد', 'success');
+                    
+                    addLog('آماده هدایت به dashboard...', 'success');
+                } else {
+                    addLog('❌ ورود ناموفق: ' + data.message, 'error');
+                }
+            } catch (error) {
+                addLog('❌ خطای غیرمنتظره!', 'error');
+                addLog('پیام خطا: ' + error.message, 'error');
+                addLog('نوع خطا: ' + error.name, 'error');
+                addLog('Stack trace: ' + error.stack, 'error');
+                
+                // بررسی نوع خطا
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    addLog('⚠️ احتمالاً سرور Backend در حال اجرا نیست!', 'error');
+                } else if (error.name === 'SyntaxError') {
+                    addLog('⚠️ پاسخ سرور JSON معتبری نیست!', 'error');
+                }
+            }
+            
+            addLog('==== پایان تست ورود ====', 'info');
+        }
+        
+        // تست خودکار هنگام بارگذاری
+        window.addEventListener('load', () => {
+            addLog('صفحه بارگذاری شد', 'info');
+            addLog('مرورگر: ' + navigator.userAgent, 'info');
+            testAPI();
+        });
+    </script>
+</body>
+</html>

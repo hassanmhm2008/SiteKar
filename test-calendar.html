@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست تقویم</title>
+    <link rel="stylesheet" href="jalali-calendar.css">
+    <style>
+        body {
+            font-family: Tahoma, sans-serif;
+            padding: 50px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .filter-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .filter-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>تست تقویم شمسی</h1>
+        
+        <div class="filter-group">
+            <label>تاریخ با filter-group (مثل گزارش‌ها):</label>
+            <input type="text" id="date1" placeholder="1404/08/14" dir="ltr">
+        </div>
+
+        <div class="form-group">
+            <label>تاریخ با form-group (مثل کارها):</label>
+            <input type="text" id="date2" placeholder="1404/08/14" dir="ltr">
+        </div>
+
+        <div class="filter-group">
+            <label>تاریخ با مقدار پیش‌فرض امروز:</label>
+            <input type="text" id="date3" placeholder="1404/08/14" dir="ltr">
+        </div>
+
+        <div class="result" id="result">
+            <strong>مقادیر انتخاب شده:</strong><br>
+            تاریخ 1: <span id="value1"></span><br>
+            تاریخ 2: <span id="value2"></span><br>
+            تاریخ 3: <span id="value3"></span>
+        </div>
+
+        <button onclick="showResults()" style="width: 100%; padding: 12px; background: #2196f3; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 20px;">
+            نمایش مقادیر
+        </button>
+    </div>
+
+    <script src="jalali-calendar.js"></script>
+    <script>
+        // راه‌اندازی تقویم‌ها
+        initJalaliDatePicker('date1', false);
+        initJalaliDatePicker('date2', false);
+        initJalaliDatePicker('date3', true);
+
+        function showResults() {
+            document.getElementById('value1').textContent = document.getElementById('date1').value || 'انتخاب نشده';
+            document.getElementById('value2').textContent = document.getElementById('date2').value || 'انتخاب نشده';
+            document.getElementById('value3').textContent = document.getElementById('date3').value || 'انتخاب نشده';
+            document.getElementById('result').style.display = 'block';
+        }
+
+        // بستن تقویم با کلیک خارج
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.filter-group') && 
+                !e.target.closest('.form-group') && 
+                !e.target.closest('.calendar-popup')) {
+                closeAllCalendars();
+            }
+        });
+    </script>
+</body>
+</html>

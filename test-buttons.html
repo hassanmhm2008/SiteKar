@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تست دکمه‌ها</title>
+    <style>
+        body { font-family: Tahoma; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+        .success { background: #4CAF50; color: white; }
+        .danger { background: #f44336; color: white; }
+        .info { background: #2196F3; color: white; }
+        #output { margin-top: 20px; padding: 10px; background: #f0f0f0; min-height: 100px; }
+    </style>
+</head>
+<body>
+    <h1>تست سریع توابع JavaScript</h1>
+    
+    <div>
+        <button class="info" onclick="testViewDetails()">تست نمایش (👁️)</button>
+        <button class="success" onclick="testApprove()">تست تایید (✓)</button>
+        <button class="danger" onclick="testReject()">تست رد (✗)</button>
+    </div>
+
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message) {
+            output.innerHTML += message + '<br>';
+            console.log(message);
+        }
+
+        function testViewDetails() {
+            log('✓ تابع viewDetails صدا زده شد');
+            log('در حال دریافت اطلاعات از سرور...');
+            
+            fetch('http://localhost:3000/api/requests/1')
+                .then(res => res.json())
+                .then(data => {
+                    log('✓ داده دریافت شد: ' + JSON.stringify(data).substring(0, 50) + '...');
+                })
+                .catch(err => {
+                    log('✗ خطا: ' + err.message);
+                });
+        }
+
+        function testApprove() {
+            log('✓ تابع openApproveModal صدا زده شد');
+            log('✓ Modal تایید باید باز شود');
+            alert('اگر این پیام را می‌بینید، دکمه کار می‌کند!');
+        }
+
+        function testReject() {
+            log('✓ تابع openRejectModal صدا زده شد');
+            log('✓ Modal رد باید باز شود');
+            alert('اگر این پیام را می‌بینید، دکمه کار می‌کند!');
+        }
+
+        // تست اتوماتیک در هنگام لود
+        window.addEventListener('load', () => {
+            log('=== صفحه لود شد ===');
+            log('تاریخ/زمان: ' + new Date().toLocaleString('fa-IR'));
+            
+            // بررسی اتصال به سرور
+            fetch('http://localhost:3000/api/requests/all/pending')
+                .then(res => {
+                    log('✓ سرور در دسترس است');
+                    return res.json();
+                })
+                .then(data => {
+                    log('✓ تعداد درخواست‌ها: ' + (data.requests ? data.requests.length : 0));
+                })
+                .catch(err => {
+                    log('✗ سرور در دسترس نیست: ' + err.message);
+                    log('⚠️ لطفاً سرور را اجرا کنید: cd backend && node server.js');
+                });
+        });
+    </script>
+</body>
+</html>

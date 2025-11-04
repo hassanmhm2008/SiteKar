@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت کاربران - مدیریت کار و درخواست</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>سیستم مدیریت</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span> داشبورد
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <span>✓</span> کارها
+                </a>
+                <a href="requests.html" class="nav-item">
+                    <span>📦</span> درخواست‌ها
+                </a>
+                <a href="department-requests.html" class="nav-item admin-menu" data-page="department-requests">
+                    <span>📋</span> درخواست‌های واحد
+                </a>
+                <a href="warehouse-requests.html" class="nav-item admin-menu" data-page="warehouse-requests">
+                    <span>🏭</span> درخواست‌های انبار
+                </a>                
+                <div class="nav-item-parent admin-menu" onclick="toggleSubmenu(this)">
+                    <span>⚙️</span> تنظیمات
+                </div>
+                <div class="nav-submenu admin-menu">
+                    <a href="users.html" class="nav-item active">
+                        <span>👥</span> مدیریت کاربران
+                    </a>
+                    <a href="departments.html" class="nav-item">
+                        <span>🏢</span> واحدها
+                    </a>
+                    <a href="products.html" class="nav-item">
+                        <span>📋</span> مدیریت کالاها
+                    </a>
+                    <a href="permissions.html" class="nav-item">
+                        <span>🔐</span> دسترسی‌ها
+                    </a>
+                    <a href="reports.html" class="nav-item">
+                        <span>📈</span> گزارش‌ها
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="currentUserInfo">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name"></span>
+                        <span class="user-role"></span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary btn-logout">خروج</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1>مدیریت کاربران</h1>
+                <div class="header-actions">
+                    <button onclick="openUserModal()" class="btn btn-primary">+ افزودن کاربر</button>
+                </div>
+            </header>
+
+            <div class="content-section">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>شناسه</th>
+                                <th>نام کامل</th>
+                                <th>نام کاربری</th>
+                                <th>نقش</th>
+                                <th>واحد</th>
+                                <th>ایمیل</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="7" class="empty-state">در حال بارگذاری...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal افزودن/ویرایش کاربر -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">افزودن کاربر جدید</h2>
+                <button onclick="closeUserModal()" class="modal-close">&times;</button>
+            </div>
+            <form id="userForm" class="modal-form">
+                <input type="hidden" id="userId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fullName">نام کامل *</label>
+                        <input type="text" id="fullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="username">نام کاربری *</label>
+                        <input type="text" id="username" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="password" id="passwordLabel">رمز عبور *</label>
+                        <input type="password" id="password">
+                    </div>
+                    <div class="form-group">
+                        <label for="role">نقش *</label>
+                        <select id="role" required>
+                            <option value="">انتخاب کنید</option>
+                            <option value="مدیر">مدیر</option>
+                            <option value="رئیس واحد">رئیس واحد</option>
+                            <option value="کارمند">کارمند</option>
+                            <option value="کارشناس">کارشناس</option>
+                            <option value="انبار دار">انبار دار</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="department">واحد *</label>
+                        <select id="department" required>
+                            <option value="">انتخاب کنید</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">ایمیل</label>
+                        <input type="email" id="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">تلفن</label>
+                        <input type="tel" id="phone">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">ذخیره</button>
+                    <button type="button" onclick="closeUserModal()" class="btn btn-secondary">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="api.js"></script>
+    <script>
+        checkAuth();
+        displayCurrentUser();
+        
+        (async function() {
+            await checkCurrentPageAccess();
+            await checkPagePermissions();
+            initializeMenu();
+        })();
+        
+        let editingUserId = null;
+        let allUsers = [];
+        let allDepartments = [];
+
+        // بارگذاری اولیه
+        (async function() {
+            await loadDepartments();
+            await loadUsers();
+        })();
+
+        async function loadUsers() {
+            try {
+                const result = await usersAPI.getAll();
+                
+                if (result.success) {
+                    allUsers = result.users;
+                    displayUsers(allUsers);
+                } else {
+                    alert('خطا در دریافت لیست کاربران');
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری کاربران:', error);
+                document.getElementById('usersTableBody').innerHTML = 
+                    '<tr><td colspan="8" class="empty-state">خطا در اتصال به سرور</td></tr>';
+            }
+        }
+
+        async function loadDepartments() {
+            try {
+                const result = await departmentsAPI.getAll();
+                
+                if (result.success && result.departments) {
+                    allDepartments = result.departments;
+                    console.log('واحدها بارگذاری شدند:', allDepartments.length);
+                } else {
+                    console.error('خطا در دریافت واحدها:', result);
+                    allDepartments = [];
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری واحدها:', error);
+                allDepartments = [];
+            }
+        }
+
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">هیچ کاربری ثبت نشده است</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => {
+                return `
+                    <tr>
+                        <td>${toPersianNumber(user.id)}</td>
+                        <td>${user.full_name}</td>
+                        <td>${user.username}</td>
+                        <td><span class="badge badge-info">${user.role}</span></td>
+                        <td>${user.department_name || '-'}</td>
+                        <td>${user.email || '-'}</td>
+                        <td>
+                            <button onclick="editUser(${user.id})" class="btn-icon" title="ویرایش">✏️</button>
+                            <button onclick="deleteUser(${user.id})" class="btn-icon" title="حذف">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function openUserModal(userId = null) {
+            const modal = document.getElementById('userModal');
+            const form = document.getElementById('userForm');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            try {
+                form.reset();
+                editingUserId = userId;
+
+                // بارگذاری لیست واحدها
+                await loadDepartmentsList();
+
+                if (userId) {
+                    modalTitle.textContent = 'ویرایش کاربر';
+                    
+                    // رمز عبور در ویرایش اختیاری است
+                    const passwordField = document.getElementById('password');
+                    const passwordLabel = document.getElementById('passwordLabel');
+                    passwordField.removeAttribute('required');
+                    passwordLabel.textContent = 'رمز عبور (خالی بگذارید اگر تغییری نمی‌خواهید)';
+                    
+                    const user = allUsers.find(u => u.id === userId);
+                    
+                    if (user) {
+                        document.getElementById('userId').value = user.id;
+                        document.getElementById('fullName').value = user.full_name;
+                        document.getElementById('username').value = user.username;
+                        document.getElementById('password').value = ''; // رمز عبور خالی
+                        document.getElementById('role').value = user.role;
+                        document.getElementById('department').value = user.department_id || '';
+                        document.getElementById('email').value = user.email || '';
+                        document.getElementById('phone').value = user.phone || '';
+                    }
+                } else {
+                    modalTitle.textContent = 'افزودن کاربر جدید';
+                    
+                    // رمز عبور در ایجاد الزامی است
+                    const passwordField = document.getElementById('password');
+                    const passwordLabel = document.getElementById('passwordLabel');
+                    passwordField.setAttribute('required', 'required');
+                    passwordLabel.textContent = 'رمز عبور *';
+                }
+                modal.style.display = 'flex';
+            } catch (error) {
+                console.error('خطا در باز کردن فرم:', error);
+                alert('خطا در باز کردن فرم کاربر');
+            }
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+            editingUserId = null;
+        }
+
+
+        async function loadDepartmentsList() {
+            const departmentSelect = document.getElementById('department');
+            
+            if (!departmentSelect) {
+                console.error('عنصر department پیدا نشد');
+                return;
+            }
+            
+            try {
+                // اگر واحدها بارگذاری نشده، دوباره بارگذاری کن
+                if (!allDepartments || allDepartments.length === 0) {
+                    await loadDepartments();
+                }
+                
+                departmentSelect.innerHTML = '<option value="">انتخاب کنید</option>' +
+                    allDepartments.map(dept => 
+                        `<option value="${dept.id}">${dept.name}</option>`
+                    ).join('');
+            } catch (error) {
+                console.error('خطا در بارگذاری لیست واحدها:', error);
+                departmentSelect.innerHTML = '<option value="">خطا در بارگذاری واحدها</option>';
+            }
+        }
+
+        document.getElementById('userForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            try {
+                let result;
+                if (editingUserId) {
+                    // ویرایش کاربر - فقط فیلدهای تغییر یافته
+                    const user = allUsers.find(u => u.id === editingUserId);
+                    const formData = {};
+                    
+                    const username = document.getElementById('username').value;
+                    const password = document.getElementById('password').value;
+                    const full_name = document.getElementById('fullName').value;
+                    const role = document.getElementById('role').value;
+                    const department_id = document.getElementById('department').value ? 
+                        parseInt(document.getElementById('department').value) : null;
+                    const email = document.getElementById('email').value;
+                    const phone = document.getElementById('phone').value;
+                    
+                    console.log('مقادیر کاربر فعلی:', user);
+                    console.log('مقادیر جدید فرم:', { username, full_name, role, department_id, email, phone });
+                    
+                    // فقط فیلدهای تغییر یافته را اضافه کن
+                    if (username !== user.username) formData.username = username;
+                    if (password) formData.password = password; // فقط اگر رمز عبور جدید وارد شده باشد
+                    if (full_name !== user.full_name) formData.full_name = full_name;
+                    if (role !== user.role) formData.role = role;
+                    if (department_id !== user.department_id) formData.department_id = department_id;
+                    if (email !== (user.email || '')) formData.email = email;
+                    if (phone !== (user.phone || '')) formData.phone = phone;
+                    
+                    console.log('فیلدهای تغییر یافته:', formData);
+                    
+                    if (Object.keys(formData).length === 0) {
+                        alert('هیچ تغییری اعمال نشده است');
+                        return;
+                    }
+                    
+                    result = await usersAPI.update(editingUserId, formData);
+                } else {
+                    // افزودن کاربر جدید
+                    const formData = {
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value,
+                        full_name: document.getElementById('fullName').value,
+                        role: document.getElementById('role').value,
+                        department_id: document.getElementById('department').value ? 
+                            parseInt(document.getElementById('department').value) : null,
+                        email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value
+                    };
+                    
+                    console.log('ایجاد کاربر جدید:', formData);
+                    result = await usersAPI.create(formData);
+                }
+
+                if (result.success) {
+                    closeUserModal();
+                    await loadUsers();
+                    alert(editingUserId ? 'کاربر با موفقیت ویرایش شد' : 'کاربر با موفقیت افزوده شد');
+                } else {
+                    alert(result.message || 'خطا در ذخیره اطلاعات');
+                }
+            } catch (error) {
+                console.error('خطا در ذخیره کاربر:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        });
+
+        function editUser(userId) {
+            openUserModal(userId);
+        }
+
+        async function deleteUser(userId) {
+            if (confirm('آیا از حذف این کاربر اطمینان دارید؟')) {
+                try {
+                    const result = await usersAPI.delete(userId);
+                    
+                    if (result.success) {
+                        await loadUsers();
+                        alert('کاربر با موفقیت حذف شد');
+                    } else {
+                        alert(result.message || 'خطا در حذف کاربر');
+                    }
+                } catch (error) {
+                    console.error('خطا در حذف کاربر:', error);
+                    alert('خطا در اتصال به سرور');
+                }
+            }
+        }
+
+        function checkAdminMenus() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const adminMenus = document.querySelectorAll('.admin-menu');
+            
+            if (currentUser && currentUser.role === 'مدیر') {
+                adminMenus.forEach(menu => menu.classList.add('show'));
+            } else {
+                adminMenus.forEach(menu => menu.classList.remove('show'));
+            }
+        }
+
+        // بستن modal با کلیک روی پس‌زمینه
+        window.onclick = function(event) {
+            const modal = document.getElementById('userModal');
+            if (event.target === modal) {
+                closeUserModal();
+            }
+        }
+    </script>
+</body>
+</html>

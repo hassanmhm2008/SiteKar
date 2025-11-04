@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت کارها - مدیریت کار و درخواست</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="jalali-calendar.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>سیستم مدیریت</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span> داشبورد
+                </a>
+                <a href="tasks.html" class="nav-item active">
+                    <span>✓</span> کارها
+                </a>
+                <a href="requests.html" class="nav-item">
+                    <span>📦</span> درخواست‌ها
+                </a>
+                <a href="department-requests.html" class="nav-item admin-menu" data-page="department-requests">
+                    <span>📋</span> درخواست‌های واحد
+                </a>
+                <a href="warehouse-requests.html" class="nav-item admin-menu" data-page="warehouse-requests">
+                    <span>🏭</span> درخواست‌های انبار
+                </a>
+                <div class="nav-item-parent admin-menu" onclick="toggleSubmenu(this)">
+                    <span>⚙️</span> تنظیمات
+                </div>
+                <div class="nav-submenu admin-menu">
+                    <a href="users.html" class="nav-item">
+                        <span>👥</span> مدیریت کاربران
+                    </a>
+                    <a href="departments.html" class="nav-item">
+                        <span>🏢</span> واحدها
+                    </a>
+                    <a href="products.html" class="nav-item">
+                        <span>📋</span> مدیریت کالاها
+                    </a>
+                    <a href="permissions.html" class="nav-item">
+                        <span>🔐</span> دسترسی‌ها
+                    </a>
+                    <a href="reports.html" class="nav-item">
+                        <span>📈</span> گزارش‌ها
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="currentUserInfo">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name"></span>
+                        <span class="user-role"></span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary btn-logout">خروج</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1>مدیریت کارها</h1>
+                <div class="header-actions">
+                    <button onclick="openTaskModal()" class="btn btn-primary">+ ایجاد کار جدید</button>
+                </div>
+            </header>
+
+            <div class="content-section">
+                <div class="filters">
+                    <select id="statusFilter" onchange="filterTasks()">
+                        <option value="">همه وضعیت‌ها</option>
+                        <option value="جدید">جدید</option>
+                        <option value="در حال انجام">در حال انجام</option>
+                        <option value="تکمیل شده">تکمیل شده</option>
+                        <option value="لغو شده">لغو شده</option>
+                    </select>
+
+                    <select id="priorityFilter" onchange="filterTasks()">
+                        <option value="">همه اولویت‌ها</option>
+                        <option value="بحرانی">بحرانی</option>
+                        <option value="بالا">بالا</option>
+                        <option value="متوسط">متوسط</option>
+                        <option value="پایین">پایین</option>
+                    </select>
+
+                    <select id="userFilter" onchange="filterTasks()">
+                        <option value="">همه کاربران</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>شناسه</th>
+                                <th>عنوان</th>
+                                <th>توضیحات</th>
+                                <th>اولویت</th>
+                                <th>وضعیت</th>
+                                <th>محول شده به</th>
+                                <th>مهلت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasksTableBody">
+                            <tr>
+                                <td colspan="8" class="empty-state">در حال بارگذاری...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal افزودن/ویرایش کار -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">ایجاد کار جدید</h2>
+                <button onclick="closeTaskModal()" class="modal-close">&times;</button>
+            </div>
+            <form id="taskForm" class="modal-form">
+                <input type="hidden" id="taskId">
+                
+                <div class="form-group">
+                    <label for="title">عنوان کار *</label>
+                    <input type="text" id="title" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">توضیحات</label>
+                    <textarea id="description" rows="4"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="priority">اولویت *</label>
+                        <select id="priority" required>
+                            <option value="">انتخاب کنید</option>
+                            <option value="بحرانی">بحرانی</option>
+                            <option value="بالا">بالا</option>
+                            <option value="متوسط">متوسط</option>
+                            <option value="پایین">پایین</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">وضعیت *</label>
+                        <select id="status" required>
+                            <option value="جدید">جدید</option>
+                            <option value="در حال انجام">در حال انجام</option>
+                            <option value="تکمیل شده">تکمیل شده</option>
+                            <option value="لغو شده">لغو شده</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="assignedTo">محول شده به *</label>
+                        <select id="assignedTo" required>
+                            <option value="">انتخاب کاربر</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="deadline">مهلت انجام</label>
+                        <input type="text" id="deadline" placeholder="1404/08/14" dir="ltr">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">ذخیره</button>
+                    <button type="button" onclick="closeTaskModal()" class="btn btn-secondary">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+    <script src="jalali-calendar.js"></script>
+    <script>
+        checkAuth();
+        displayCurrentUser();
+        
+        (async function() {
+            await checkPagePermissions();
+            initializeMenu();
+        })();
+        
+        loadTasks();
+        loadUserFilters();
+
+        let editingTaskId = null;
+
+        function loadTasks() {
+            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const tbody = document.getElementById('tasksTableBody');
+
+            if (tasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">هیچ کاری ثبت نشده است</td></tr>';
+                return;
+            }
+
+            displayTasks(tasks, users);
+        }
+
+        function displayTasks(tasks, users = null) {
+            if (!users) {
+                users = JSON.parse(localStorage.getItem('users') || '[]');
+            }
+
+            const tbody = document.getElementById('tasksTableBody');
+            
+            if (tasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">نتیجه‌ای یافت نشد</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = tasks.map(task => {
+                const assignedUser = users.find(u => u.id === task.assignedTo);
+                // نمایش صحیح تاریخ مهلت: در صورت شمسی بودن، همان مقدار شمسی با ارقام فارسی
+                let deadline = '-';
+                if (task.deadline) {
+                    try {
+                        const parsed = (typeof parseJalaliInputDate === 'function') ? parseJalaliInputDate(task.deadline) : null;
+                        if (parsed) {
+                            const y = parsed.jy;
+                            const m = String(parsed.jm).padStart(2, '0');
+                            const d = String(parsed.jd).padStart(2, '0');
+                            deadline = toPersianNumber ? toPersianNumber(`${y}/${m}/${d}`) : `${y}/${m}/${d}`;
+                        } else {
+                            const dt = new Date(task.deadline);
+                            if (!isNaN(dt)) {
+                                deadline = dt.toLocaleDateString('fa-IR');
+                            } else {
+                                deadline = toPersianNumber ? toPersianNumber(task.deadline) : task.deadline;
+                            }
+                        }
+                    } catch (e) {
+                        deadline = toPersianNumber ? toPersianNumber(task.deadline) : task.deadline;
+                    }
+                }
+                
+                return `
+                    <tr>
+                        <td>${toPersianNumber(task.id)}</td>
+                        <td>${task.title}</td>
+                        <td>${task.description || '-'}</td>
+                        <td><span class="badge badge-priority-${task.priority}">${task.priority}</span></td>
+                        <td><span class="badge badge-${getStatusClass(task.status)}">${task.status}</span></td>
+                        <td>${assignedUser ? assignedUser.fullName : '-'}</td>
+                        <td>${deadline}</td>
+                        <td>
+                            <button onclick="editTask(${task.id})" class="btn-icon" title="ویرایش">✏️</button>
+                            <button onclick="deleteTask(${task.id})" class="btn-icon" title="حذف">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function loadUserFilters() {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const userFilter = document.getElementById('userFilter');
+            
+            userFilter.innerHTML = '<option value="">همه کاربران</option>' +
+                users.map(user => `<option value="${user.id}">${user.fullName}</option>`).join('');
+        }
+
+        function filterTasks() {
+            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            const statusFilter = document.getElementById('statusFilter').value;
+            const priorityFilter = document.getElementById('priorityFilter').value;
+            const userFilter = document.getElementById('userFilter').value;
+
+            const filteredTasks = tasks.filter(task => {
+                if (statusFilter && task.status !== statusFilter) return false;
+                if (priorityFilter && task.priority !== priorityFilter) return false;
+                if (userFilter && task.assignedTo !== parseInt(userFilter)) return false;
+                return true;
+            });
+
+            displayTasks(filteredTasks);
+        }
+
+        function openTaskModal(taskId = null) {
+            const modal = document.getElementById('taskModal');
+            const form = document.getElementById('taskForm');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            form.reset();
+            editingTaskId = taskId;
+
+            // بارگذاری لیست کاربران
+            loadUsersForAssignment();
+
+            if (taskId) {
+                modalTitle.textContent = 'ویرایش کار';
+                const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                const task = tasks.find(t => t.id === taskId);
+                
+                if (task) {
+                    document.getElementById('taskId').value = task.id;
+                    document.getElementById('title').value = task.title;
+                    document.getElementById('description').value = task.description || '';
+                    document.getElementById('priority').value = task.priority;
+                    document.getElementById('status').value = task.status;
+                    document.getElementById('assignedTo').value = task.assignedTo;
+                    document.getElementById('deadline').value = task.deadline || '';
+                }
+            } else {
+                modalTitle.textContent = 'ایجاد کار جدید';
+                document.getElementById('status').value = 'جدید';
+            }
+
+            modal.style.display = 'flex';
+            
+            // راه‌اندازی تقویم بعد از باز شدن modal
+            setTimeout(() => {
+                initJalaliDatePicker('deadline', false);
+            }, 100);
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').style.display = 'none';
+            editingTaskId = null;
+        }
+
+        function loadUsersForAssignment() {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const assignedToSelect = document.getElementById('assignedTo');
+            
+            assignedToSelect.innerHTML = '<option value="">انتخاب کاربر</option>' +
+                users.map(user => `<option value="${user.id}">${user.fullName} (${user.role})</option>`).join('');
+        }
+
+        document.getElementById('taskForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            const formData = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                priority: document.getElementById('priority').value,
+                status: document.getElementById('status').value,
+                assignedTo: parseInt(document.getElementById('assignedTo').value),
+                deadline: document.getElementById('deadline').value,
+                createdBy: currentUser.id
+            };
+
+            if (editingTaskId) {
+                // ویرایش کار
+                const index = tasks.findIndex(t => t.id === editingTaskId);
+                tasks[index] = { ...tasks[index], ...formData, updatedAt: new Date().toISOString() };
+            } else {
+                // افزودن کار جدید
+                const newTask = {
+                    id: tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1,
+                    ...formData,
+                    createdAt: new Date().toISOString()
+                };
+                tasks.push(newTask);
+            }
+
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            closeTaskModal();
+            loadTasks();
+            alert(editingTaskId ? 'کار با موفقیت ویرایش شد' : 'کار با موفقیت ایجاد شد');
+        });
+
+        function editTask(taskId) {
+            openTaskModal(taskId);
+        }
+
+        function deleteTask(taskId) {
+            if (confirm('آیا از حذف این کار اطمینان دارید؟')) {
+                const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                const filteredTasks = tasks.filter(t => t.id !== taskId);
+                localStorage.setItem('tasks', JSON.stringify(filteredTasks));
+                loadTasks();
+                alert('کار با موفقیت حذف شد');
+            }
+        }
+
+        function getStatusClass(status) {
+            const statusMap = {
+                'جدید': 'new',
+                'در حال انجام': 'progress',
+                'تکمیل شده': 'completed',
+                'لغو شده': 'cancelled'
+            };
+            return statusMap[status] || 'new';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('taskModal');
+            if (event.target === modal) {
+                closeTaskModal();
+            }
+        }
+    </script>
+</body>
+</html>

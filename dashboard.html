@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد - مدیریت کار و درخواست</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>سیستم مدیریت</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item active">
+                    <span>📊</span> داشبورد
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <span>✓</span> کارها
+                </a>
+                <a href="requests.html" class="nav-item">
+                    <span>📦</span> درخواست‌ها
+                </a>
+                <a href="department-requests.html" class="nav-item admin-menu" data-page="department-requests">
+                    <span>📋</span> درخواست‌های واحد
+                </a>
+                <a href="warehouse-requests.html" class="nav-item admin-menu" data-page="warehouse-requests">
+                    <span>🏭</span> درخواست‌های انبار
+                </a>
+                <div class="nav-item-parent admin-menu" onclick="toggleSubmenu(this)">
+                    <span>⚙️</span> تنظیمات
+                </div>
+                <div class="nav-submenu admin-menu">
+                    <a href="users.html" class="nav-item">
+                        <span>👥</span> مدیریت کاربران
+                    </a>
+                    <a href="departments.html" class="nav-item">
+                        <span>🏢</span> واحدها
+                    </a>
+                    <a href="products.html" class="nav-item">
+                        <span>📋</span> مدیریت کالاها
+                    </a>
+                    <a href="permissions.html" class="nav-item">
+                        <span>🔐</span> دسترسی‌ها
+                    </a>
+                    <a href="reports.html" class="nav-item">
+                        <span>📈</span> گزارش‌ها
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="currentUserInfo">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name"></span>
+                        <span class="user-role"></span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary btn-logout">خروج</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1>داشبورد</h1>
+                <div class="header-actions">
+                    <span class="date-display" id="currentDate"></span>
+                </div>
+            </header>
+
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-details">
+                        <h3>کل کارها</h3>
+                        <p class="stat-number" id="totalTasks">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-details">
+                        <h3>در حال انجام</h3>
+                        <p class="stat-number" id="inProgressTasks">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-details">
+                        <h3>تکمیل شده</h3>
+                        <p class="stat-number" id="completedTasks">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-details">
+                        <h3>کاربران</h3>
+                        <p class="stat-number" id="totalUsers">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-sections">
+                <section class="dashboard-section">
+                    <h2>آخرین کارها</h2>
+                    <div class="tasks-list" id="recentTasks">
+                        <p class="empty-state">هیچ کاری ثبت نشده است</p>
+                    </div>
+                </section>
+
+                <section class="dashboard-section">
+                    <h2>کارهای من</h2>
+                    <div class="tasks-list" id="myTasks">
+                        <p class="empty-state">شما کار جدیدی ندارید</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+    <script>
+        checkAuth();
+        displayCurrentUser();
+        
+        (async function() {
+            await checkPagePermissions();
+            initializeMenu();
+        })();
+
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('fa-IR');
+
+        // بارگذاری آمار
+        loadDashboardStats();
+
+        function loadDashboardStats() {
+            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+            // آمار کلی
+            document.getElementById('totalTasks').textContent = toPersianNumber(tasks.length);
+            document.getElementById('inProgressTasks').textContent = 
+                toPersianNumber(tasks.filter(t => t.status === 'در حال انجام').length);
+            document.getElementById('completedTasks').textContent = 
+                toPersianNumber(tasks.filter(t => t.status === 'تکمیل شده').length);
+            document.getElementById('totalUsers').textContent = toPersianNumber(users.length);
+
+            // آخرین کارها
+            const recentTasksEl = document.getElementById('recentTasks');
+            const recentTasks = tasks.slice(-5).reverse();
+            if (recentTasks.length > 0) {
+                recentTasksEl.innerHTML = recentTasks.map(task => `
+                    <div class="task-item">
+                        <div class="task-info">
+                            <h4>${task.title}</h4>
+                            <p>${task.description || 'بدون توضیحات'}</p>
+                        </div>
+                        <span class="badge badge-${getStatusClass(task.status)}">${task.status}</span>
+                    </div>
+                `).join('');
+            }
+
+            // کارهای من
+            const myTasksEl = document.getElementById('myTasks');
+            const myTasks = tasks.filter(t => t.assignedTo === currentUser.id && t.status !== 'تکمیل شده');
+            if (myTasks.length > 0) {
+                myTasksEl.innerHTML = myTasks.map(task => `
+                    <div class="task-item">
+                        <div class="task-info">
+                            <h4>${task.title}</h4>
+                            <p>${task.description || 'بدون توضیحات'}</p>
+                        </div>
+                        <span class="badge badge-${getStatusClass(task.status)}">${task.status}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function getStatusClass(status) {
+            const statusMap = {
+                'جدید': 'new',
+                'در حال انجام': 'progress',
+                'تکمیل شده': 'completed',
+                'لغو شده': 'cancelled'
+            };
+            return statusMap[status] || 'new';
+        }
+
+        // بررسی منوهای ادمین
+        checkAdminMenus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت واحدها - سیستم مدیریت</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>سیستم مدیریت</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span> داشبورد
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <span>✓</span> کارها
+                </a>
+                <a href="requests.html" class="nav-item">
+                    <span>📦</span> درخواست‌ها
+                </a>
+                <a href="department-requests.html" class="nav-item admin-menu" data-page="department-requests">
+                    <span>📋</span> درخواست‌های واحد
+                </a>
+                <a href="warehouse-requests.html" class="nav-item admin-menu" data-page="warehouse-requests">
+                    <span>🏭</span> درخواست‌های انبار
+                </a>                
+                <div class="nav-item-parent admin-menu" onclick="toggleSubmenu(this)">
+                    <span>⚙️</span> تنظیمات
+                </div>
+                <div class="nav-submenu admin-menu">
+                    <a href="users.html" class="nav-item">
+                        <span>👥</span> مدیریت کاربران
+                    </a>
+                    <a href="departments.html" class="nav-item active">
+                        <span>🏢</span> واحدها
+                    </a>
+                    <a href="products.html" class="nav-item">
+                        <span>📋</span> مدیریت کالاها
+                    </a>
+                    <a href="permissions.html" class="nav-item">
+                        <span>🔐</span> دسترسی‌ها
+                    </a>
+                    <a href="reports.html" class="nav-item">
+                        <span>📈</span> گزارش‌ها
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="currentUserInfo">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name"></span>
+                        <span class="user-role"></span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary btn-logout">خروج</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <h1>مدیریت واحدها</h1>
+                <div class="header-actions">
+                    <button onclick="openDepartmentModal()" class="btn btn-primary">+ افزودن واحد</button>
+                </div>
+            </header>
+
+            <div class="content-section">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>نام واحد</th>
+                                <th>رئیس واحد</th>
+                                <th>تعداد کاربران</th>
+                                <th>توضیحات</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="departmentsTableBody">
+                            <tr>
+                                <td colspan="5" class="empty-state">در حال بارگذاری...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal افزودن/ویرایش واحد -->
+    <div id="departmentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">افزودن واحد جدید</h2>
+                <button onclick="closeDepartmentModal()" class="modal-close">&times;</button>
+            </div>
+            <form id="departmentForm" class="modal-form">
+                <input type="hidden" id="departmentId">
+                
+                <div class="form-group">
+                    <label for="name">نام واحد *</label>
+                    <input type="text" id="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">توضیحات</label>
+                    <textarea id="description" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="manager_id">مدیر واحد</label>
+                    <select id="manager_id">
+                        <option value="">بدون مدیر واحد</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">ذخیره</button>
+                    <button type="button" onclick="closeDepartmentModal()" class="btn btn-secondary">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="api.js"></script>
+    <script>
+        checkAuth();
+        displayCurrentUser();
+        
+        (async function() {
+            await checkCurrentPageAccess();
+            await checkPagePermissions();
+            initializeMenu();
+        })();
+        
+        let editingDepartmentId = null;
+
+        async function loadDepartments() {
+            try {
+                const result = await departmentsAPI.getAll();
+                
+                if (result.success && result.departments) {
+                    displayDepartments(result.departments);
+                } else {
+                    console.error('خطا در دریافت واحدها:', result);
+                    displayDepartments([]);
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری واحدها:', error);
+                displayDepartments([]);
+            }
+        }
+
+        function displayDepartments(departments) {
+            const tbody = document.getElementById('departmentsTableBody');
+
+            if (!departments || departments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">هیچ واحدی ثبت نشده است</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = departments.map(dept => `
+                <tr>
+                    <td><strong>${dept.name}</strong></td>
+                    <td>${dept.manager_name || 'تعیین نشده'}</td>
+                    <td>${toPersianNumber(dept.user_count)} نفر</td>
+                    <td>${dept.description || '-'}</td>
+                    <td>
+                        <button onclick="editDepartment(${dept.id})" class="btn-icon" title="ویرایش">✏️</button>
+                        <button onclick="deleteDepartment(${dept.id})" class="btn-icon" title="حذف">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadManagers() {
+            try {
+                const result = await usersAPI.getAll();
+                const managerSelect = document.getElementById('manager_id');
+                
+                if (result.success && result.users) {
+                    managerSelect.innerHTML = '<option value="">بدون مدیر واحد</option>' +
+                        result.users.filter(u => u.role === 'مدیر' || u.role === 'رئیس واحد')
+                            .map(u => `<option value="${u.id}">${u.full_name} (${u.role})</option>`)
+                            .join('');
+                } else {
+                    managerSelect.innerHTML = '<option value="">بدون مدیر واحد</option>';
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری مدیران:', error);
+                document.getElementById('manager_id').innerHTML = '<option value="">بدون مدیر واحد</option>';
+            }
+        }
+
+        function openDepartmentModal(departmentId = null) {
+            const modal = document.getElementById('departmentModal');
+            const form = document.getElementById('departmentForm');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            form.reset();
+            editingDepartmentId = departmentId;
+            loadManagers();
+
+            if (departmentId) {
+                modalTitle.textContent = 'ویرایش واحد';
+                loadDepartmentData(departmentId);
+            } else {
+                modalTitle.textContent = 'افزودن واحد جدید';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        async function loadDepartmentData(departmentId) {
+            try {
+                const result = await departmentsAPI.getAll();
+                
+                if (!result.success || !result.departments) {
+                    console.error('خطا در دریافت اطلاعات واحد');
+                    return;
+                }
+                
+                const department = result.departments.find(d => d.id === departmentId);
+                
+                if (department) {
+                    document.getElementById('departmentId').value = department.id;
+                    document.getElementById('name').value = department.name;
+                    document.getElementById('description').value = department.description || '';
+                    document.getElementById('manager_id').value = department.manager_id || '';
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری اطلاعات واحد:', error);
+            }
+        }
+
+        function closeDepartmentModal() {
+            document.getElementById('departmentModal').style.display = 'none';
+            editingDepartmentId = null;
+        }
+
+        document.getElementById('departmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const departmentData = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                manager_id: document.getElementById('manager_id').value || null
+            };
+
+            try {
+                let result;
+                if (editingDepartmentId) {
+                    result = await departmentsAPI.update(editingDepartmentId, departmentData);
+                } else {
+                    result = await departmentsAPI.create(departmentData);
+                }
+                
+                if (result.success) {
+                    closeDepartmentModal();
+                    await loadDepartments();
+                    alert(editingDepartmentId ? 'واحد با موفقیت ویرایش شد' : 'واحد با موفقیت افزوده شد');
+                } else {
+                    alert(result.message || 'خطا در ذخیره اطلاعات');
+                }
+            } catch (error) {
+                console.error('خطا:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        });
+
+        function editDepartment(departmentId) {
+            openDepartmentModal(departmentId);
+        }
+
+        async function deleteDepartment(departmentId) {
+            if (!confirm('آیا از حذف این واحد اطمینان دارید؟\nتوجه: فقط واحدهای بدون کاربر قابل حذف هستند.')) return;
+
+            try {
+                const result = await departmentsAPI.delete(departmentId);
+                
+                if (result.success) {
+                    await loadDepartments();
+                    alert('واحد با موفقیت حذف شد');
+                } else {
+                    alert(result.message || 'خطا در حذف واحد');
+                }
+            } catch (error) {
+                console.error('خطا:', error);
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        loadDepartments();
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('departmentModal');
+            if (event.target === modal) {
+                closeDepartmentModal();
+            }
+        }
+    </script>
+</body>
+</html>
