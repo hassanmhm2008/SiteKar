@@ -10,9 +10,38 @@ function toPersianNumber(num) {
 // بررسی احراز هویت
 function checkAuth() {
     const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser && !window.location.pathname.endsWith('index.html') && !window.location.pathname.endsWith('/')) {
+    const currentPage = window.location.pathname;
+    
+    // صفحات عمومی که نیاز به احراز هویت ندارند
+    const publicPages = [
+        'index.html',
+        'login.html', 
+        'home.html',
+        'test-mock-api.html',
+        '/',
+        ''
+    ];
+    
+    // بررسی اینکه آیا در صفحه عمومی هستیم
+    const isPublicPage = publicPages.some(page => 
+        currentPage.endsWith(page) || currentPage === '/' || currentPage === ''
+    );
+    
+    // اگر کاربر وارد نشده و در صفحه خصوصی است، به صفحه ورود هدایت کن
+    if (!currentUser && !isPublicPage) {
+        console.log('User not authenticated, redirecting to login');
         window.location.href = 'index.html';
+        return false;
     }
+    
+    // اگر کاربر وارد شده و در صفحه ورود است، به داشبورد هدایت کن
+    if (currentUser && (currentPage.endsWith('index.html') || currentPage.endsWith('login.html'))) {
+        console.log('User already authenticated, redirecting to dashboard');
+        window.location.href = 'dashboard.html';
+        return false;
+    }
+    
+    return true;
 }
 
 // نمایش اطلاعات کاربر جاری
@@ -22,17 +51,21 @@ function displayCurrentUser() {
         const userNameElements = document.querySelectorAll('.user-name');
         const userRoleElements = document.querySelectorAll('.user-role');
         
-        userNameElements.forEach(el => el.textContent = currentUser.fullName);
-        userRoleElements.forEach(el => el.textContent = currentUser.role);
+        // استفاده از name بجای fullName (بر اساس ساختار Mock API)
+        const displayName = currentUser.name || currentUser.fullName || currentUser.username;
+        const displayRole = currentUser.role;
+        
+        userNameElements.forEach(el => el.textContent = displayName);
+        userRoleElements.forEach(el => el.textContent = displayRole);
+        
+        console.log('User info displayed:', displayName, displayRole);
     }
 }
 
 // خروج از سیستم
 function logout() {
     if (confirm('آیا می‌خواهید از سیستم خارج شوید؟')) {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('permissionsMap');
-        window.location.href = 'index.html';
+        window.location.href = 'logout.html';
     }
 }
 

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خروج از سیستم</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .logout-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .logout-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            margin: 20px;
+        }
+        .logout-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        .logout-message {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .logout-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <div class="logout-container">
+        <div class="logout-box">
+            <div class="logout-icon">👋</div>
+            <div class="logout-message">
+                <h2>با موفقیت خارج شدید</h2>
+                <p>از استفاده شما سپاسگزاریم!</p>
+            </div>
+            <div class="logout-actions">
+                <a href="index.html" class="btn btn-primary">ورود مجدد</a>
+                <a href="home.html" class="btn btn-secondary">صفحه اصلی</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // پاک کردن تمام داده‌های احراز هویت
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('permissionsMap');
+        
+        // پس از 3 ثانیه به صفحه اصلی هدایت شود
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 3000);
+    </script>
+</body>
+</html>
