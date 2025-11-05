@@ -198,17 +198,63 @@
 
         let editingTaskId = null;
 
-        function loadTasks() {
-            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
+        async function loadTasks() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             const tbody = document.getElementById('tasksTableBody');
 
-            if (tasks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">هیچ کاری ثبت نشده است</td></tr>';
+            if (!currentUser) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لطفا ابتدا وارد شوید</td></tr>';
                 return;
             }
 
-            displayTasks(tasks, users);
+            try {
+                // دریافت کارها از سرور
+                const result = await tasksAPI.getAll();
+                
+                if (!result.success) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">خطا در دریافت کارها</td></tr>';
+                    return;
+                }
+
+                const tasks = result.data || result.tasks || [];
+                
+                // دریافت کاربران برای نمایش نام‌ها
+                let users = JSON.parse(localStorage.getItem('users') || '[]');
+                if (users.length === 0) {
+                    const usersResult = await usersAPI.getAll();
+                    if (usersResult.success && usersResult.users) {
+                        users = usersResult.users;
+                        localStorage.setItem('users', JSON.stringify(users));
+                    }
+                }
+
+                // فیلتر کردن کارها بر اساس دسترسی کاربر
+                let visibleTasks = [];
+                
+                if (currentUser.role === 'مدیر') {
+                    // مدیر همه کارها را می‌بیند
+                    visibleTasks = tasks;
+                } else {
+                    // سایر کاربران فقط کارهای محول شده به خودشان یا ایجاد شده توسط خودشان را می‌بینند
+                    const currentUserId = parseInt(currentUser.id || currentUser.user_id);
+                    
+                    visibleTasks = tasks.filter(task => {
+                        const assignedTo = parseInt(task.assignedTo || task.assigned_to);
+                        const createdBy = parseInt(task.createdBy || task.created_by);
+                        return assignedTo === currentUserId || createdBy === currentUserId;
+                    });
+                }
+
+                if (visibleTasks.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">هیچ کاری ثبت نشده است</td></tr>';
+                    return;
+                }
+
+                displayTasks(visibleTasks, users);
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">خطا در بارگذاری کارها. لطفا دوباره تلاش کنید.</td></tr>';
+            }
         }
 
         function displayTasks(tasks, users = null) {
@@ -224,7 +270,9 @@
             }
 
             tbody.innerHTML = tasks.map(task => {
-                const assignedUser = users.find(u => u.id === task.assignedTo);
+                // پشتیبانی از هر دو فرمت fullName و full_name
+                const assignedUser = users.find(u => u.id === task.assignedTo || u.id === task.assigned_to);
+                const assignedName = assignedUser ? (assignedUser.fullName || assignedUser.full_name || assignedUser.username || '-') : '-';
                 // نمایش صحیح تاریخ مهلت: در صورت شمسی بودن، همان مقدار شمسی با ارقام فارسی
                 let deadline = '-';
                 if (task.deadline) {
@@ -255,7 +303,7 @@
                         <td>${task.description || '-'}</td>
                         <td><span class="badge badge-priority-${task.priority}">${task.priority}</span></td>
                         <td><span class="badge badge-${getStatusClass(task.status)}">${task.status}</span></td>
-                        <td>${assignedUser ? assignedUser.fullName : '-'}</td>
+                        <td>${assignedName}</td>
                         <td>${deadline}</td>
                         <td>
                             <button onclick="editTask(${task.id})" class="btn-icon" title="ویرایش">✏️</button>
@@ -270,27 +318,66 @@
             const users = JSON.parse(localStorage.getItem('users') || '[]');
             const userFilter = document.getElementById('userFilter');
             
+            // پشتیبانی از هر دو فرمت
             userFilter.innerHTML = '<option value="">همه کاربران</option>' +
-                users.map(user => `<option value="${user.id}">${user.fullName}</option>`).join('');
+                users.map(user => `<option value="${user.id}">${user.fullName || user.full_name || user.username}</option>`).join('');
         }
 
-        function filterTasks() {
-            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+        async function filterTasks() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             const statusFilter = document.getElementById('statusFilter').value;
             const priorityFilter = document.getElementById('priorityFilter').value;
             const userFilter = document.getElementById('userFilter').value;
 
-            const filteredTasks = tasks.filter(task => {
-                if (statusFilter && task.status !== statusFilter) return false;
-                if (priorityFilter && task.priority !== priorityFilter) return false;
-                if (userFilter && task.assignedTo !== parseInt(userFilter)) return false;
-                return true;
-            });
+            if (!currentUser) {
+                displayTasks([]);
+                return;
+            }
 
-            displayTasks(filteredTasks);
+            try {
+                // دریافت کارها از سرور
+                const result = await tasksAPI.getAll();
+                
+                if (!result.success) {
+                    displayTasks([]);
+                    return;
+                }
+
+                const tasks = result.data || result.tasks || [];
+
+                // ابتدا فیلتر دسترسی کاربر
+                let visibleTasks = [];
+                const currentUserId = parseInt(currentUser.id || currentUser.user_id);
+                
+                if (currentUser.role === 'مدیر') {
+                    visibleTasks = tasks;
+                } else {
+                    visibleTasks = tasks.filter(task => {
+                        const assignedTo = parseInt(task.assignedTo || task.assigned_to);
+                        const createdBy = parseInt(task.createdBy || task.created_by);
+                        return assignedTo === currentUserId || createdBy === currentUserId;
+                    });
+                }
+
+                // سپس فیلترهای اضافی
+                const filteredTasks = visibleTasks.filter(task => {
+                    if (statusFilter && task.status !== statusFilter) return false;
+                    if (priorityFilter && task.priority !== priorityFilter) return false;
+                    if (userFilter) {
+                        const taskAssignedTo = parseInt(task.assignedTo || task.assigned_to);
+                        if (taskAssignedTo !== parseInt(userFilter)) return false;
+                    }
+                    return true;
+                });
+
+                displayTasks(filteredTasks);
+            } catch (error) {
+                console.error('Error filtering tasks:', error);
+                displayTasks([]);
+            }
         }
 
-        function openTaskModal(taskId = null) {
+        async function openTaskModal(taskId = null) {
             const modal = document.getElementById('taskModal');
             const form = document.getElementById('taskForm');
             const modalTitle = document.getElementById('modalTitle');
@@ -298,22 +385,32 @@
             form.reset();
             editingTaskId = taskId;
 
-            // بارگذاری لیست کاربران
-            loadUsersForAssignment();
+            // بارگذاری لیست کاربران (async)
+            await loadUsersForAssignment();
 
             if (taskId) {
                 modalTitle.textContent = 'ویرایش کار';
-                const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-                const task = tasks.find(t => t.id === taskId);
                 
-                if (task) {
-                    document.getElementById('taskId').value = task.id;
-                    document.getElementById('title').value = task.title;
-                    document.getElementById('description').value = task.description || '';
-                    document.getElementById('priority').value = task.priority;
-                    document.getElementById('status').value = task.status;
-                    document.getElementById('assignedTo').value = task.assignedTo;
-                    document.getElementById('deadline').value = task.deadline || '';
+                try {
+                    // دریافت اطلاعات کار از سرور
+                    const result = await tasksAPI.getAll();
+                    if (result.success) {
+                        const tasks = result.data || result.tasks || [];
+                        const task = tasks.find(t => t.id === taskId);
+                        
+                        if (task) {
+                            document.getElementById('taskId').value = task.id;
+                            document.getElementById('title').value = task.title;
+                            document.getElementById('description').value = task.description || '';
+                            document.getElementById('priority').value = task.priority;
+                            document.getElementById('status').value = task.status;
+                            document.getElementById('assignedTo').value = task.assignedTo || task.assigned_to;
+                            document.getElementById('deadline').value = task.deadline || '';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading task:', error);
+                    alert('خطا در بارگذاری اطلاعات کار');
                 }
             } else {
                 modalTitle.textContent = 'ایجاد کار جدید';
@@ -333,57 +430,156 @@
             editingTaskId = null;
         }
 
-        function loadUsersForAssignment() {
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        async function loadUsersForAssignment() {
+            let users = JSON.parse(localStorage.getItem('users') || '[]');
+            const currentUserRaw = JSON.parse(localStorage.getItem('currentUser') || 'null');
             const assignedToSelect = document.getElementById('assignedTo');
 
-            const isLeaderRole = role => ['رئیس','رئیس واحد'].includes(role);
-
-            // پیدا کردن رئیس گروهِ کاربر (اگر خودش رئیس است، خودش)
-            function findUserById(id){ return users.find(u => u.id === id); }
-            function findGroupLeader(user){
-                if (!user) return null;
-                if (isLeaderRole(user.role)) return user;
-                const sup = findUserById(user.supervisor);
-                if (!sup) return null;
-                return isLeaderRole(sup.role) ? sup : null;
+            // اگر users خالی است، از API بگیریم
+            if (users.length === 0) {
+                try {
+                    const result = await usersAPI.getAll();
+                    if (result.success && result.users) {
+                        users = result.users;
+                        // ذخیره در localStorage برای بار بعد
+                        localStorage.setItem('users', JSON.stringify(users));
+                    }
+                } catch (error) {
+                    console.error('Failed to load users from API:', error);
+                }
             }
 
+            if (!currentUserRaw) {
+                // اگر کاربر وارد نشده، همه را نشان بده
+                assignedToSelect.innerHTML = '<option value="">انتخاب کاربر</option>' +
+                    users.map(user => `<option value="${user.id}">${user.fullName || user.full_name || user.username} (${user.role})</option>`).join('');
+                return;
+            }
+
+            // پیدا کردن کاربر کامل از لیست users بر اساس id، user_id، یا username
+            let actualCurrentUser = null;
+            
+            // امتحان با id
+            if (currentUserRaw.id) {
+                actualCurrentUser = users.find(u => u.id === currentUserRaw.id);
+            }
+            // امتحان با user_id (از API)
+            if (!actualCurrentUser && currentUserRaw.user_id) {
+                actualCurrentUser = users.find(u => u.id === currentUserRaw.user_id || u.user_id === currentUserRaw.user_id);
+            }
+            // امتحان با username
+            if (!actualCurrentUser && currentUserRaw.username) {
+                actualCurrentUser = users.find(u => u.username === currentUserRaw.username);
+            }
+            
+            // اگر در users نبود، از خود currentUser استفاده کن (با normalize کردن فیلدها)
+            if (!actualCurrentUser) {
+                actualCurrentUser = {
+                    id: currentUserRaw.id || currentUserRaw.user_id,
+                    username: currentUserRaw.username,
+                    fullName: currentUserRaw.fullName || currentUserRaw.full_name || currentUserRaw.username,
+                    role: currentUserRaw.role,
+                    supervisor: currentUserRaw.supervisor || currentUserRaw.supervisor_id,
+                    department_id: currentUserRaw.department_id || currentUserRaw.departmentId
+                };
+                // اگر هنوز id نداره، نمی‌تونیم ادامه بدیم
+                if (!actualCurrentUser.id) {
+                    console.error('Cannot determine user ID from currentUser:', currentUserRaw);
+                    assignedToSelect.innerHTML = '<option value="">خطا: شناسه کاربر یافت نشد</option>';
+                    return;
+                }
+            }
+
+            // normalize کردن فیلدهای کاربر (حمایت از هر دو فرمت snake_case و camelCase)
+            const normalizeUser = (u) => ({
+                id: u.id || u.user_id,
+                username: u.username,
+                fullName: u.fullName || u.full_name || u.username,
+                role: u.role,
+                supervisor: u.supervisor || u.supervisor_id,
+                department_id: u.department_id || u.departmentId
+            });
+
+            const currentUser = normalizeUser(actualCurrentUser);
+            const normalizedUsers = users.map(normalizeUser);
+
+            const isLeaderRole = role => role && ['رئیس','رئیس واحد'].includes(role);
+
             let allowedUsers = [];
-            if (!currentUser) {
-                allowedUsers = users.slice();
-            } else if (currentUser.role === 'مدیر') {
+            
+            if (currentUser.role === 'مدیر') {
                 // مدیر همه را می‌بیند
-                allowedUsers = users.slice();
+                allowedUsers = normalizedUsers.slice();
             } else if (isLeaderRole(currentUser.role)) {
-                // رئیس: اعضای گروه خودش + همهٔ رؤسای دیگر
-                const myGroupMembers = users.filter(u => u.supervisor === currentUser.id);
-                const allLeaders = users.filter(u => isLeaderRole(u.role));
+                // رئیس: اعضای واحد خودش + همهٔ رؤسای دیگر + خودش
+                
+                // روش اول: اگر supervisor داشتند (fallback)
+                let myGroupMembers = normalizedUsers.filter(u => u.supervisor === currentUser.id);
+                
+                // روش دوم: اگر supervisor نداشتند، بر اساس department
+                if (myGroupMembers.length === 0 && currentUser.department_id) {
+                    myGroupMembers = normalizedUsers.filter(u => 
+                        u.department_id === currentUser.department_id && u.id !== currentUser.id
+                    );
+                }
+                
+                const allLeaders = normalizedUsers.filter(u => isLeaderRole(u.role));
+                
                 const set = new Map();
-                [...myGroupMembers, currentUser, ...allLeaders].forEach(u => set.set(u.id, u));
+                myGroupMembers.forEach(u => set.set(u.id, u));
+                allLeaders.forEach(u => set.set(u.id, u));
+                set.set(currentUser.id, currentUser);
+                
                 allowedUsers = Array.from(set.values());
             } else {
-                // کاربر عادی: اعضای گروه خودش + رئیس گروه
-                const leader = findGroupLeader(currentUser);
-                const groupMembers = leader ? users.filter(u => u.supervisor === leader.id) : [];
-                const set = new Map();
-                [...groupMembers, ...(leader ? [leader] : []), currentUser].forEach(u => set.set(u.id, u));
-                allowedUsers = Array.from(set.values());
+                // کاربر عادی: همه اعضای واحد + رئیس واحد
+                
+                // روش اول: اگر supervisor داشت
+                if (currentUser.supervisor) {
+                    const leader = normalizedUsers.find(u => u.id === currentUser.supervisor);
+                    
+                    if (leader && isLeaderRole(leader.role)) {
+                        const groupMembers = normalizedUsers.filter(u => u.supervisor === leader.id);
+                        
+                        const set = new Map();
+                        set.set(leader.id, leader);
+                        groupMembers.forEach(u => set.set(u.id, u));
+                        set.set(currentUser.id, currentUser);
+                        
+                        allowedUsers = Array.from(set.values());
+                    } else {
+                        allowedUsers = [];
+                    }
+                }
+                
+                // روش دوم: اگر supervisor نداشت، بر اساس department
+                if (allowedUsers.length === 0 && currentUser.department_id) {
+                    const deptMembers = normalizedUsers.filter(u => u.department_id === currentUser.department_id);
+                    
+                    const set = new Map();
+                    deptMembers.forEach(u => set.set(u.id, u));
+                    
+                    allowedUsers = Array.from(set.values());
+                } else if (allowedUsers.length === 0) {
+                    allowedUsers = [currentUser];
+                }
             }
 
             // مرتب‌سازی: اول رؤسا، بعد بقیه بر اساس نام
             const roleOrder = u => (isLeaderRole(u.role) ? 0 : 1);
-            allowedUsers.sort((a,b) => roleOrder(a)-roleOrder(b) || a.fullName.localeCompare(b.fullName, 'fa'));
+            allowedUsers.sort((a,b) => {
+                const orderDiff = roleOrder(a) - roleOrder(b);
+                if (orderDiff !== 0) return orderDiff;
+                return (a.fullName || '').localeCompare(b.fullName || '', 'fa');
+            });
 
             assignedToSelect.innerHTML = '<option value="">انتخاب کاربر</option>' +
                 allowedUsers.map(user => `<option value="${user.id}">${user.fullName} (${user.role})</option>`).join('');
         }
 
-        document.getElementById('taskForm').addEventListener('submit', function(e) {
+        document.getElementById('taskForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
             const formData = {
@@ -391,42 +587,72 @@
                 description: document.getElementById('description').value,
                 priority: document.getElementById('priority').value,
                 status: document.getElementById('status').value,
-                assignedTo: parseInt(document.getElementById('assignedTo').value),
+                assigned_to: parseInt(document.getElementById('assignedTo').value),
                 deadline: document.getElementById('deadline').value,
-                createdBy: currentUser.id
+                created_by: parseInt(currentUser.id || currentUser.user_id),
+                department_id: currentUser.department_id || null
             };
 
-            if (editingTaskId) {
-                // ویرایش کار
-                const index = tasks.findIndex(t => t.id === editingTaskId);
-                tasks[index] = { ...tasks[index], ...formData, updatedAt: new Date().toISOString() };
-            } else {
-                // افزودن کار جدید
-                const newTask = {
-                    id: tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1,
-                    ...formData,
-                    createdAt: new Date().toISOString()
-                };
-                tasks.push(newTask);
-            }
+            console.log('Submitting task:', formData);
+            console.log('Edit mode:', editingTaskId ? 'Edit (id=' + editingTaskId + ')' : 'Create');
 
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-            closeTaskModal();
-            loadTasks();
-            alert(editingTaskId ? 'کار با موفقیت ویرایش شد' : 'کار با موفقیت ایجاد شد');
+            try {
+                if (editingTaskId) {
+                    // ویرایش کار
+                    console.log('Calling tasksAPI.update...');
+                    const result = await tasksAPI.update(editingTaskId, formData);
+                    console.log('Update result:', result);
+                    
+                    if (result.success) {
+                        closeTaskModal();
+                        await loadTasks();
+                        alert('کار با موفقیت ویرایش شد');
+                    } else {
+                        alert('خطا در ویرایش کار: ' + (result.message || 'خطای ناشناخته'));
+                    }
+                } else {
+                    // افزودن کار جدید
+                    console.log('Calling tasksAPI.create...');
+                    const result = await tasksAPI.create(formData);
+                    console.log('Create result:', result);
+                    
+                    if (result.success) {
+                        closeTaskModal();
+                        await loadTasks();
+                        alert('کار با موفقیت ایجاد شد');
+                    } else {
+                        alert('خطا در ایجاد کار: ' + (result.message || 'خطای ناشناخته'));
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving task:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
+                alert('خطا در ذخیره کار: ' + error.message);
+            }
         });
 
         function editTask(taskId) {
             openTaskModal(taskId);
         }
 
-        function deleteTask(taskId) {
+        async function deleteTask(taskId) {
             if (confirm('آیا از حذف این کار اطمینان دارید؟')) {
-                const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-                const filteredTasks = tasks.filter(t => t.id !== taskId);
-                localStorage.setItem('tasks', JSON.stringify(filteredTasks));
-                loadTasks();
-                alert('کار با موفقیت حذف شد');
+                try {
+                    const result = await tasksAPI.delete(taskId);
+                    if (result.success) {
+                        await loadTasks();
+                        alert('کار با موفقیت حذف شد');
+                    } else {
+                        alert('خطا در حذف کار: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Error deleting task:', error);
+                    alert('خطا در حذف کار. لطفا دوباره تلاش کنید.');
+                }
             }
         }
 
