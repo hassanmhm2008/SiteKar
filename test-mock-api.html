@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست Mock API - سیستم مدیریت</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        .error {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status.online {
+            background: #28a745;
+            color: white;
+        }
+        .status.offline {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1>🧪 تست Mock API</h1>
+            <div id="apiStatus" class="status">در حال بررسی...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔐 تست احراز هویت</h3>
+            <button class="test-button" onclick="testLogin()">ورود با Admin</button>
+            <button class="test-button" onclick="testLoginWrong()">ورود اشتباه</button>
+            <div id="loginResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>👥 تست کاربران</h3>
+            <button class="test-button" onclick="testGetUsers()">دریافت کاربران</button>
+            <button class="test-button" onclick="testGetUsersByDept()">کاربران دپارتمان</button>
+            <div id="usersResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🏢 تست دپارتمان‌ها</h3>
+            <button class="test-button" onclick="testGetDepartments()">دریافت دپارتمان‌ها</button>
+            <div id="departmentsResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 تست کارها</h3>
+            <button class="test-button" onclick="testGetTasks()">دریافت کارها</button>
+            <button class="test-button" onclick="testCreateTask()">ایجاد کار جدید</button>
+            <div id="tasksResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 تست گزارشات</h3>
+            <button class="test-button" onclick="testGetDashboard()">آمار داشبورد</button>
+            <div id="dashboardResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🗄️ تست LocalStorage</h3>
+            <button class="test-button" onclick="showLocalStorage()">نمایش داده‌ها</button>
+            <button class="test-button" onclick="clearLocalStorage()">پاک کردن داده‌ها</button>
+            <div id="storageResult" class="result"></div>
+        </div>
+    </div>
+
+    <script src="api-mock.js"></script>
+    <script>
+        // بررسی وضعیت API
+        function checkApiStatus() {
+            const statusEl = document.getElementById('apiStatus');
+            if (typeof mockDB !== 'undefined') {
+                statusEl.textContent = '🟢 Mock API فعال';
+                statusEl.classList.add('online');
+            } else {
+                statusEl.textContent = '🔴 Mock API غیرفعال';
+                statusEl.classList.add('offline');
+            }
+        }
+
+        // Helper function برای نمایش نتایج
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+            element.className = `result ${isError ? 'error' : 'success'}`;
+        }
+
+        // تست ورود
+        async function testLogin() {
+            try {
+                const result = await authAPI.login({ 
+                    username: 'admin', 
+                    password: 'admin123' 
+                });
+                showResult('loginResult', result);
+            } catch (error) {
+                showResult('loginResult', { error: error.message }, true);
+            }
+        }
+
+        async function testLoginWrong() {
+            try {
+                const result = await authAPI.login({ 
+                    username: 'wrong', 
+                    password: 'wrong' 
+                });
+                showResult('loginResult', result);
+            } catch (error) {
+                showResult('loginResult', { error: error.message }, true);
+            }
+        }
+
+        // تست کاربران
+        async function testGetUsers() {
+            try {
+                const result = await usersAPI.getAll();
+                showResult('usersResult', result);
+            } catch (error) {
+                showResult('usersResult', { error: error.message }, true);
+            }
+        }
+
+        async function testGetUsersByDept() {
+            try {
+                const result = await usersAPI.getByDepartment(2);
+                showResult('usersResult', result);
+            } catch (error) {
+                showResult('usersResult', { error: error.message }, true);
+            }
+        }
+
+        // تست دپارتمان‌ها
+        async function testGetDepartments() {
+            try {
+                const result = await departmentsAPI.getAll();
+                showResult('departmentsResult', result);
+            } catch (error) {
+                showResult('departmentsResult', { error: error.message }, true);
+            }
+        }
+
+        // تست کارها
+        async function testGetTasks() {
+            try {
+                const result = await tasksAPI.getAll();
+                showResult('tasksResult', result);
+            } catch (error) {
+                showResult('tasksResult', { error: error.message }, true);
+            }
+        }
+
+        async function testCreateTask() {
+            try {
+                const newTask = {
+                    title: 'کار تست',
+                    description: 'این یک کار تستی است',
+                    assigned_to: 2,
+                    created_by: 1,
+                    status: 'pending',
+                    priority: 'medium',
+                    due_date: '2025-11-15'
+                };
+                const result = await tasksAPI.create(newTask);
+                showResult('tasksResult', result);
+            } catch (error) {
+                showResult('tasksResult', { error: error.message }, true);
+            }
+        }
+
+        // تست داشبورد
+        async function testGetDashboard() {
+            try {
+                const result = await reportsAPI.getDashboardStats();
+                showResult('dashboardResult', result);
+            } catch (error) {
+                showResult('dashboardResult', { error: error.message }, true);
+            }
+        }
+
+        // تست LocalStorage
+        function showLocalStorage() {
+            const data = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('mock_')) {
+                    data[key] = JSON.parse(localStorage.getItem(key));
+                }
+            }
+            showResult('storageResult', data);
+        }
+
+        function clearLocalStorage() {
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('mock_')) {
+                    keys.push(key);
+                }
+            }
+            keys.forEach(key => localStorage.removeItem(key));
+            
+            // راه‌اندازی مجدد
+            if (typeof mockDB !== 'undefined') {
+                mockDB.seedData();
+            }
+            
+            showResult('storageResult', { message: 'داده‌ها پاک شدند و دوباره ایجاد شدند' });
+        }
+
+        // راه‌اندازی اولیه
+        document.addEventListener('DOMContentLoaded', function() {
+            checkApiStatus();
+        });
+    </script>
+</body>
+</html>
