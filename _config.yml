@@ -1,0 +1,105 @@
+# Jekyll Configuration for GitHub Pages
+title: سیستم مدیریت کار و درخواست
+description: سیستم مدیریت کارها و درخواست‌های سازمانی
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "" # the base hostname & protocol for your site
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+# Exclude files and directories from processing
+exclude:
+  - backend/
+  - node_modules/
+  - .git/
+  - .gitignore
+  - README.md
+  - INSTALL.md
+  - QUICKSTART.md
+  - CHANGES_SUMMARY.md
+  - DEBUG_BUTTONS.md
+  - FIX_STATUS_GUIDE.md
+  - JALALI-CALENDAR-README.md
+  - MYSQL_FIX.md
+  - PERMISSIONS_SETUP.md
+  - WORKFLOW_COMPLETE.md
+  - WORKFLOW_GUIDE.md
+  - database-setup-guide.txt
+  - database.sql
+  - setup-database.ps1
+  - check-all.ps1
+  - logo_base64.txt
+  - logo_base64_clean.txt
+  - "*.ps1"
+  - "*.md"
+  - "test-*.html"
+  - "login-test.html"
+  - "index_jekyll.html"
+  - Gemfile
+  - Gemfile.lock
+  - vendor/
+
+# Don't process HTML files as Liquid templates
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+# Process files with no front matter
+include:
+  - "*.html"
+  - "*.css"
+  - "*.js"
+
+# Disable Liquid processing for HTML files
+liquid:
+  error_mode: warn
+
+# Include files that would otherwise be excluded
+include:
+  - _pages
+  - _layouts
+  - _includes
+
+# Collections (if needed)
+collections_dir: collections
+
+# Sass/SCSS settings
+sass:
+  sass_dir: _sass
+  style: compressed
+
+# Permalink structure
+permalink: pretty
+
+# Timezone
+timezone: Asia/Tehran
+
+# Language
+lang: fa
+
+# GitHub Pages settings
+github: [metadata]
+
+# Safe mode (required for GitHub Pages)
+safe: true
+
+# Incremental build
+incremental: false
+
+# Keep files
+keep_files:
+  - .git
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+      lang: "fa"
+      dir: "rtl"

@@ -1,0 +1,72 @@
+---
+layout: default
+title: ورود به سیستم
+description: صفحه ورود به سیستم مدیریت کار و درخواست
+body_class: login-page
+---
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>سیستم مدیریت کار و درخواست</h1>
+                <p>لطفاً برای ورود اطلاعات خود را وارد کنید</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">نام کاربری</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">رمز عبور</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="remember" name="remember">
+                        <span>مرا به خاطر بسپار</span>
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">ورود</button>
+            </form>
+            <div class="login-footer">
+                <p>اطلاعات ورود پیش‌فرض: admin / admin123</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = this.querySelector('button[type="submit"]');
+            
+            // غیرفعال کردن دکمه در حین ورود
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'در حال ورود...';
+            
+            try {
+                // ارسال درخواست به API
+                const result = await authAPI.login({ username, password });
+                
+                if (result.success) {
+                    // پاک کردن کش قبلی پرمیشن‌ها
+                    localStorage.removeItem('permissionsMap');
+                    
+                    // ذخیره اطلاعات کاربر در localStorage
+                    localStorage.setItem('currentUser', JSON.stringify(result.user));
+                    
+                    // هدایت به داشبورد
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert(result.message || 'نام کاربری یا رمز عبور اشتباه است');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'ورود';
+                }
+            } catch (error) {
+                console.error('خطا در ورود:', error);
+                alert('خطا در اتصال به سرور. لطفاً مطمئن شوید که سرور Backend در حال اجرا است.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'ورود';
+            }
+        });
+</script>

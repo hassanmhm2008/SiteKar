@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.title | default: "سیستم مدیریت کار و درخواست" }}</title>
+    {% if page.description %}
+    <meta name="description" content="{{ page.description }}">
+    {% endif %}
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="{{ site.baseurl }}/styles.css">
+    {% if page.custom_css %}
+    <link rel="stylesheet" href="{{ site.baseurl }}/{{ page.custom_css }}">
+    {% endif %}
+    
+    <!-- Jalali Calendar CSS if needed -->
+    {% if page.jalali_calendar %}
+    <link rel="stylesheet" href="{{ site.baseurl }}/jalali-calendar.css">
+    {% endif %}
+</head>
+<body{% if page.body_class %} class="{{ page.body_class }}"{% endif %}>
+    {{ content }}
+    
+    <!-- Common JavaScript Files -->
+    <script src="{{ site.baseurl }}/api.js"></script>
+    <script src="{{ site.baseurl }}/app.js"></script>
+    
+    <!-- Jalali Calendar JS if needed -->
+    {% if page.jalali_calendar %}
+    <script src="{{ site.baseurl }}/jalali-calendar.js"></script>
+    {% endif %}
+    
+    <!-- Custom JavaScript -->
+    {% if page.custom_js %}
+    <script src="{{ site.baseurl }}/{{ page.custom_js }}"></script>
+    {% endif %}
+</body>
+</html>
